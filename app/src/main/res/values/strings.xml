@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Godlo</string>
+    <string name="share_label">Godlo で保存</string>
+    <string name="downloading">ダウンロード中</string>
+    <string name="download_done">ダウンロード完了</string>
+    <string name="download_failed">ダウンロード失敗</string>
+    <string name="channel_progress">ダウンロードの進行状況</string>
+    <string name="channel_result">ダウンロードの結果</string>
+</resources>
