@@ -40,12 +40,16 @@ data class Album(
 
 data class MediaFile(
     val file: File,
-    val site: String,
-    val folder: String,
+    /** Names from the tool's directory down: `<site>/[<folder>/...]<file>`. */
+    val path: List<String>,
     val modified: Long,
     val size: Long
 ) {
     val title: String get() = file.nameWithoutExtension
+    val site: String get() = path.first()
+
+    /** The directories between the site and the file, e.g. a playlist; empty when none. */
+    val folder: String get() = path.drop(1).dropLast(1).joinToString(" / ")
 }
 
 data class Library(
@@ -134,11 +138,9 @@ class LibraryRepository(settings: SettingsRepository) {
             .onEnter { !it.name.startsWith(".") }
             .filter { it.isFile && it.extension.lowercase() in extensions && it.parentFile != base }
             .map { file ->
-                val parts = file.parentFile!!.relativeTo(base).invariantSeparatorsPath.split("/")
                 MediaFile(
                     file = file,
-                    site = parts.first(),
-                    folder = parts.drop(1).joinToString(" / "),
+                    path = file.relativeTo(base).invariantSeparatorsPath.split("/"),
                     modified = file.lastModified(),
                     size = file.length()
                 )

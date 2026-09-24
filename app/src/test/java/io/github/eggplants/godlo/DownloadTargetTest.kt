@@ -20,7 +20,8 @@ class DownloadTargetTest {
         Album(it, path.split("/"), File(it, "0.jpg"), count = 31, modified = 0)
     }
 
-    private fun media(path: String) = MediaFile(File(path), "youtube.com", "", 0, 0)
+    private fun media(path: String) =
+        MediaFile(File(path), listOf("youtube.com", File(path).name), 0, 0)
 
     private val library = Library(
         albums = listOf(

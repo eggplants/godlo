@@ -1,13 +1,15 @@
 package io.github.eggplants.godlo
 
 import io.github.eggplants.godlo.library.Album
-import io.github.eggplants.godlo.library.AlbumNode
-import io.github.eggplants.godlo.library.AlbumTree
+import io.github.eggplants.godlo.library.LibraryTree
+import io.github.eggplants.godlo.library.MediaFile
+import io.github.eggplants.godlo.library.TreeNode
+import io.github.eggplants.godlo.library.cover
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class AlbumTreeTest {
+class LibraryTreeTest {
     private fun album(root: String, path: String, modified: Long) = File(root, path).let { dir ->
         Album(dir, path.split("/"), File(dir, "0.jpg"), count = 10, modified = modified)
     }
@@ -25,8 +27,8 @@ class AlbumTreeTest {
         album("/d/gallery-dl", "takecomic.jp/イラスト", 1)
     )
 
-    private fun names(path: List<String>) = AlbumTree.children(albums, path).map {
-        (if (it is AlbumNode.Folder) "folder " else "album ") + it.name
+    private fun names(path: List<String>) = LibraryTree.albums.children(albums, path).map {
+        (if (it is TreeNode.Folder) "folder " else "album ") + it.name
     }
 
     @Test
@@ -56,8 +58,8 @@ class AlbumTreeTest {
 
     @Test
     fun folderSummarisesWhatIsInside() {
-        val site = AlbumTree.children(albums, emptyList())
-            .filterIsInstance<AlbumNode.Folder>()
+        val site = LibraryTree.albums.children(albums, emptyList())
+            .filterIsInstance<TreeNode.Folder<Album>>()
             .first { it.name == "takecomic.jp" }
         // メイドインアビス, 別の漫画 and イラスト
         assertEquals(3, site.entries)
@@ -66,6 +68,38 @@ class AlbumTreeTest {
         assertEquals(
             setOf(File("/d/getjmanga/takecomic.jp"), File("/d/gallery-dl/takecomic.jp")),
             site.dirs.toSet()
+        )
+    }
+
+    private fun video(path: String, modified: Long) =
+        MediaFile(File("/d/yt-dlp", path), path.split("/"), modified, size = 0)
+
+    private val videos = listOf(
+        video("youtube.com/old [a].mp4", 1),
+        video("youtube.com/new [b].mp4", 3),
+        video("youtube.com/Some playlist/002 second [d].mp4", 5),
+        video("youtube.com/Some playlist/001 first [c].mp4", 6),
+        video("nicovideo.jp/clip [e].mp4", 2)
+    )
+
+    private fun videoNames(path: List<String>) = LibraryTree.media.children(videos, path).map {
+        (if (it is TreeNode.Folder) "folder " else "video ") + it.name
+    }
+
+    @Test
+    fun videosGroupBySiteNewestFirst() {
+        assertEquals(listOf("folder youtube.com", "folder nicovideo.jp"), videoNames(emptyList()))
+        assertEquals(
+            listOf("folder Some playlist", "video new [b].mp4", "video old [a].mp4"),
+            videoNames(listOf("youtube.com"))
+        )
+    }
+
+    @Test
+    fun playlistKeepsItsOrder() {
+        assertEquals(
+            listOf("video 001 first [c].mp4", "video 002 second [d].mp4"),
+            videoNames(listOf("youtube.com", "Some playlist"))
         )
     }
 }

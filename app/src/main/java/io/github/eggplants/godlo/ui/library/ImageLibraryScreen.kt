@@ -68,8 +68,9 @@ import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.LibraryLayout
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.library.Album
-import io.github.eggplants.godlo.library.AlbumNode
-import io.github.eggplants.godlo.library.AlbumTree
+import io.github.eggplants.godlo.library.LibraryTree
+import io.github.eggplants.godlo.library.TreeNode
+import io.github.eggplants.godlo.library.cover
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
@@ -86,14 +87,14 @@ fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
     val path = pathKey.split("/").filter { it.isNotEmpty() }
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
-    var deleting by remember { mutableStateOf<AlbumNode?>(null) }
+    var deleting by remember { mutableStateOf<TreeNode<Album>?>(null) }
     val searchResults = query.isNotBlank()
     val nodes = if (searchResults) {
         library.albums
             .filter { it.path.any { name -> name.contains(query, ignoreCase = true) } }
-            .map { AlbumNode.Leaf(it) }
+            .map { TreeNode.Leaf(it, it.title, it.modified, it.dir) }
     } else {
-        AlbumTree.children(library.albums, path)
+        LibraryTree.albums.children(library.albums, path)
     }
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.imageLayout
@@ -112,48 +113,21 @@ fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    if (path.isNotEmpty() && !searchResults) {
-                        IconButton(onClick = ::goUp) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                stringResource(R.string.up_one_level)
-                            )
-                        }
-                    }
-                },
-                title = {
-                    if (path.isEmpty() || searchResults) {
-                        Text(stringResource(R.string.nav_images))
-                    } else {
-                        Column {
-                            Text(path.last(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(
-                                (
-                                    listOf(
-                                        stringResource(R.string.nav_images)
-                                    ) + path.dropLast(1)
-                                    ).joinToString(" › "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        searching = !searching
-                        if (!searching) query = ""
-                    }) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
-                    LayoutMenuButton(layout) { next ->
-                        scope.launch { container.settings.update { it.copy(imageLayout = next) } }
-                    }
-                },
+            LibraryTopBar(
+                root = stringResource(R.string.nav_images),
+                // Search results come from every folder, so they are not shown as inside one.
+                path = if (searchResults) emptyList() else path,
+                onUp = ::goUp,
                 scrollBehavior = scrollBehavior
-            )
+            ) {
+                IconButton(onClick = {
+                    searching = !searching
+                    if (!searching) query = ""
+                }) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
+                LayoutMenuButton(layout) { next ->
+                    scope.launch { container.settings.update { it.copy(imageLayout = next) } }
+                }
+            }
         }
     ) { padding ->
         PullToRefreshBox(
@@ -199,27 +173,27 @@ fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
                         .combinedClickable(
                             onClick = {
                                 when (node) {
-                                    is AlbumNode.Folder -> pathKey = node.path.joinToString("/")
-                                    is AlbumNode.Leaf -> onOpen(node.album.dir)
+                                    is TreeNode.Folder -> pathKey = node.path.joinToString("/")
+                                    is TreeNode.Leaf -> onOpen(node.item.dir)
                                 }
                             },
                             onLongClick = { deleting = node }
                         )
                     // Search results come from anywhere, so they say where they are from.
                     val detail = when (node) {
-                        is AlbumNode.Folder -> pluralStringResource(
+                        is TreeNode.Folder -> pluralStringResource(
                             R.plurals.entries,
                             node.entries,
                             node.entries
                         )
 
-                        is AlbumNode.Leaf -> if (searchResults) {
-                            node.album.path.dropLast(1).joinToString(" › ")
+                        is TreeNode.Leaf -> if (searchResults) {
+                            node.item.path.dropLast(1).joinToString(" › ")
                         } else {
                             pluralStringResource(
                                 R.plurals.pages,
-                                node.album.count,
-                                node.album.count
+                                node.item.count,
+                                node.item.count
                             )
                         }
                     }
@@ -247,7 +221,7 @@ fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
 }
 
 @Composable
-private fun NodeRow(node: AlbumNode, detail: String, modifier: Modifier = Modifier) {
+private fun NodeRow(node: TreeNode<Album>, detail: String, modifier: Modifier = Modifier) {
     ListItem(
         headlineContent = { Text(node.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         supportingContent = { Text(detail, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -263,7 +237,7 @@ private fun NodeRow(node: AlbumNode, detail: String, modifier: Modifier = Modifi
             )
         },
         trailingContent = {
-            if (node is AlbumNode.Folder) {
+            if (node is TreeNode.Folder) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
             }
         },
@@ -278,7 +252,7 @@ private fun NodeRow(node: AlbumNode, detail: String, modifier: Modifier = Modifi
  */
 @Composable
 private fun NodeCard(
-    node: AlbumNode,
+    node: TreeNode<Album>,
     detail: String,
     compact: Boolean,
     modifier: Modifier = Modifier
@@ -307,13 +281,13 @@ private fun NodeCard(
                         modifier = Modifier.padding(horizontal = 2.dp)
                     ) {
                         when (node) {
-                            is AlbumNode.Folder -> {
+                            is TreeNode.Folder -> {
                                 Icon(Icons.Filled.Folder, null, Modifier.size(12.dp))
                                 Spacer(Modifier.width(3.dp))
                                 Text("${node.entries}")
                             }
 
-                            is AlbumNode.Leaf -> Text("${node.album.count}")
+                            is TreeNode.Leaf -> Text("${node.item.count}")
                         }
                     }
                 }
