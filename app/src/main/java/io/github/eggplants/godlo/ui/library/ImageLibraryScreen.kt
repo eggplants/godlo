@@ -66,7 +66,6 @@ import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.LibraryLayout
-import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.library.Album
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.TreeNode
@@ -74,7 +73,6 @@ import io.github.eggplants.godlo.library.cover
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
-import io.github.eggplants.godlo.ui.components.SiteFilterRow
 import java.io.File
 import kotlinx.coroutines.launch
 

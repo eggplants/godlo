@@ -1,7 +1,6 @@
 package io.github.eggplants.godlo.library
 
 import io.github.eggplants.godlo.core.Engine
-import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.core.SettingsRepository
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -32,10 +31,6 @@ data class Album(
     val modified: Long
 ) {
     val title: String get() = dir.name
-    val site: String get() = path.first()
-
-    /** The directories between the site and the album, e.g. the manga series; empty when none. */
-    val group: String get() = path.drop(1).dropLast(1).joinToString(" / ")
 }
 
 data class MediaFile(
@@ -46,10 +41,6 @@ data class MediaFile(
     val size: Long
 ) {
     val title: String get() = file.nameWithoutExtension
-    val site: String get() = path.first()
-
-    /** The directories between the site and the file, e.g. a playlist; empty when none. */
-    val folder: String get() = path.drop(1).dropLast(1).joinToString(" / ")
 }
 
 data class Library(
@@ -57,13 +48,7 @@ data class Library(
     val audio: List<MediaFile> = emptyList(),
     val video: List<MediaFile> = emptyList(),
     val loading: Boolean = true
-) {
-    fun sites(kind: MediaKind): List<String> = when (kind) {
-        MediaKind.IMAGE -> albums.map { it.site }
-        MediaKind.AUDIO -> audio.map { it.site }
-        MediaKind.VIDEO -> video.map { it.site }
-    }.distinct().sorted()
-}
+)
 
 /**
  * Everything saved in the tools' directories, found by walking the file system.

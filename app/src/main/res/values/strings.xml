@@ -31,7 +31,6 @@
     <string name="close">Close</string>
     <string name="back">Back</string>
     <string name="search">Search</string>
-    <string name="all">All</string>
     <string name="delete_title">Delete?</string>
     <string name="delete_body">“%1$s” will be deleted from this device. This can’t be undone.</string>
     <string name="layout_button">View: %1$s</string>

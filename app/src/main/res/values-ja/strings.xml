@@ -29,7 +29,6 @@
     <string name="close">閉じる</string>
     <string name="back">戻る</string>
     <string name="search">検索</string>
-    <string name="all">すべて</string>
     <string name="delete_title">削除しますか？</string>
     <string name="delete_body">「%1$s」を端末から削除します。元に戻せません。</string>
     <string name="layout_button">表示形式: %1$s</string>

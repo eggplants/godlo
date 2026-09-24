@@ -43,7 +43,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -71,7 +70,6 @@ import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.LibraryLayout
-import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.library.AudioArt
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.MediaFile
@@ -79,7 +77,6 @@ import io.github.eggplants.godlo.library.TreeNode
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
-import io.github.eggplants.godlo.ui.components.SiteFilterRow
 import io.github.eggplants.godlo.ui.components.formatSize
 import java.io.File
 import kotlinx.coroutines.launch
@@ -92,28 +89,43 @@ fun AudioLibraryScreen(container: AppContainer) {
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.audioLayout
     val scope = rememberCoroutineScope()
-    var site by rememberSaveable { mutableStateOf<String?>(null) }
-    var deleting by remember { mutableStateOf<MediaFile?>(null) }
-    val tracks = library.audio.filter { site == null || it.site == site }
+    // The folder being looked at, e.g. "youtube.com/Some album"; empty for the sites.
+    var pathKey by rememberSaveable { mutableStateOf("") }
+    val path = pathKey.split("/").filter { it.isNotEmpty() }
+    var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
+    val nodes = LibraryTree.media.children(library.audio, path)
+    val tracks = nodes.mapNotNull { (it as? TreeNode.Leaf)?.item?.file }
+    // Everything inside the folder, for shuffling it.
+    val below = library.audio.filter { it.path.size > path.size && it.path.take(path.size) == path }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    fun goUp() {
+        pathKey = path.dropLast(1).joinToString("/")
+    }
+    BackHandler(enabled = path.isNotEmpty(), onBack = ::goUp)
+    // A folder whose last track was deleted, here or elsewhere, is gone: step out of it.
+    LaunchedEffect(nodes.isEmpty(), library.loading) {
+        if (nodes.isEmpty() && !library.loading && path.isNotEmpty()) goUp()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_audio)) },
-                actions = {
-                    if (tracks.isNotEmpty()) {
-                        IconButton(onClick = {
-                            container.audio.play(tracks.map { it.file }.shuffled(), 0)
-                        }) { Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle_play)) }
-                    }
-                    LayoutMenuButton(layout) { next ->
-                        scope.launch { container.settings.update { it.copy(audioLayout = next) } }
-                    }
-                },
+            LibraryTopBar(
+                root = stringResource(R.string.nav_audio),
+                path = path,
+                onUp = ::goUp,
                 scrollBehavior = scrollBehavior
-            )
+            ) {
+                if (below.isNotEmpty()) {
+                    IconButton(onClick = {
+                        container.audio.play(below.map { it.file }.shuffled(), 0)
+                    }) { Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle_play)) }
+                }
+                LayoutMenuButton(layout) { next ->
+                    scope.launch { container.settings.update { it.copy(audioLayout = next) } }
+                }
+            }
         }
     ) { padding ->
         PullToRefreshBox(
@@ -122,15 +134,7 @@ fun AudioLibraryScreen(container: AppContainer) {
             modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize()
         ) {
             LibraryGrid(layout, largeMinSize = 150.dp, smallMinSize = 96.dp) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SiteFilterRow(
-                        library.sites(MediaKind.AUDIO),
-                        site,
-                        { site = it },
-                        Modifier.padding(vertical = 4.dp)
-                    )
-                }
-                if (tracks.isEmpty() && !library.loading) {
+                if (nodes.isEmpty() && !library.loading) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(
                             Icons.Outlined.Headphones,
@@ -139,35 +143,65 @@ fun AudioLibraryScreen(container: AppContainer) {
                         )
                     }
                 }
-                items(tracks, key = { it.file.absolutePath }) { track ->
-                    val playing = nowPlaying.path == track.file.absolutePath
+                items(nodes, key = { it.key }) { node ->
                     val modifier = Modifier
                         .animateItem()
                         .combinedClickable(
                             onClick = {
-                                container.audio.play(tracks.map { it.file }, tracks.indexOf(track))
+                                when (node) {
+                                    is TreeNode.Folder -> pathKey = node.path.joinToString("/")
+
+                                    is TreeNode.Leaf ->
+                                        container.audio.play(tracks, tracks.indexOf(node.item.file))
+                                }
                             },
-                            onLongClick = { deleting = track }
+                            onLongClick = { deleting = node }
                         )
+                    val (title, details, file) = when (node) {
+                        is TreeNode.Folder -> Triple(
+                            node.name,
+                            pluralStringResource(R.plurals.entries, node.entries, node.entries),
+                            node.latest.file
+                        )
+
+                        is TreeNode.Leaf -> Triple(
+                            node.item.title,
+                            formatSize(node.item.size),
+                            node.item.file
+                        )
+                    }
+                    val folderEntries = (node as? TreeNode.Folder)?.entries
+                    val playing = node is TreeNode.Leaf && nowPlaying.path == file.absolutePath
                     if (layout == LibraryLayout.LIST) {
                         MediaRow(
-                            title = track.title,
-                            details = track.details,
+                            title = title,
+                            details = details,
                             highlight = playing,
-                            modifier = modifier
-                        ) { AudioArtwork(track.file, Modifier.size(52.dp), playing) }
+                            modifier = modifier,
+                            trailing = if (folderEntries != null) {
+                                {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null
+                                    )
+                                }
+                            } else {
+                                null
+                            }
+                        ) { AudioArtwork(file, Modifier.size(52.dp), playing) }
                     } else {
                         MediaTile(
-                            title = track.title,
-                            details = track.details,
+                            title = title,
+                            details = details,
                             compact = layout == LibraryLayout.SMALL_GRID,
                             highlight = playing,
                             modifier = modifier
                         ) {
                             AudioArtwork(
-                                track.file,
+                                file,
                                 Modifier.fillMaxWidth().aspectRatio(1f),
-                                playing
+                                playing,
+                                folderEntries
                             )
                         }
                     }
@@ -175,15 +209,20 @@ fun AudioLibraryScreen(container: AppContainer) {
             }
         }
     }
-    deleting?.let { track ->
-        ConfirmDeleteDialog(track.title, {
-            container.library.delete(track.file)
-        }, { deleting = null })
+    deleting?.let { node ->
+        ConfirmDeleteDialog(node.name, { container.library.delete(*node.dirs.toTypedArray()) }, {
+            deleting = null
+        })
     }
 }
 
 @Composable
-fun AudioArtwork(file: File, modifier: Modifier = Modifier, playing: Boolean = false) {
+fun AudioArtwork(
+    file: File,
+    modifier: Modifier = Modifier,
+    playing: Boolean = false,
+    folderEntries: Int? = null
+) {
     Box(modifier.clip(MaterialTheme.shapes.medium)) {
         SubcomposeAsyncImage(
             model = AudioArt(file),
@@ -208,6 +247,9 @@ fun AudioArtwork(file: File, modifier: Modifier = Modifier, playing: Boolean = f
                 Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)),
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Filled.GraphicEq, null, tint = Color.White) }
+        }
+        if (folderEntries != null) {
+            FolderBadge(folderEntries, Modifier.align(Alignment.BottomEnd).padding(6.dp))
         }
     }
 }
@@ -380,27 +422,30 @@ private fun VideoThumbnail(
                         .padding(playIconSize / 6)
                 )
             } else {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.8f),
-                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 2.dp)
-                    ) {
-                        Icon(Icons.Filled.Folder, null, Modifier.size(12.dp))
-                        Spacer(Modifier.width(3.dp))
-                        Text("$folderEntries")
-                    }
-                }
+                FolderBadge(folderEntries, Modifier.align(Alignment.BottomEnd).padding(6.dp))
             }
         }
     }
 }
 
-private val MediaFile.details: String
-    get() = listOf(site, folder, formatSize(size)).filter { it.isNotBlank() }.joinToString(" · ")
+/** Marks a folder's picture with how many entries it holds. */
+@Composable
+private fun FolderBadge(entries: Int, modifier: Modifier = Modifier) {
+    Badge(
+        containerColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.8f),
+        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 2.dp)
+        ) {
+            Icon(Icons.Filled.Folder, null, Modifier.size(12.dp))
+            Spacer(Modifier.width(3.dp))
+            Text("$entries")
+        }
+    }
+}
 
 @Composable
 private fun MediaRow(
