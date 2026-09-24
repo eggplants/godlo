@@ -48,9 +48,22 @@ android {
     }
 }
 
+// Chaquopy needs a Python of the same minor version at build time. It looks for `python3.13`
+// on PATH, which Android Studio launched from a desktop entry does not share with the shell,
+// so fall back to where mise (see mise.toml) installs it. `-Pgodlo.buildPython=...` overrides.
+val hostPython: String? = providers.gradleProperty("godlo.buildPython").orNull
+    ?: listOfNotNull(
+        System.getenv("MISE_DATA_DIR"),
+        System.getenv("XDG_DATA_HOME")?.let { "$it/mise" },
+        "${System.getProperty("user.home")}/.local/share/mise"
+    ).map { file("$it/installs/python/3.13/bin/python3.13") }
+        .firstOrNull { it.canExecute() }
+        ?.absolutePath
+
 chaquopy {
     defaultConfig {
         version = "3.13"
+        hostPython?.let { buildPython(it) }
         pip {
             // getjmanga asks for cryptography>=43, but Chaquopy's newest Android build is 42.0.8,
             // which has the AES-CBC API getjmanga uses. Resolve the tree by hand instead of pip.
