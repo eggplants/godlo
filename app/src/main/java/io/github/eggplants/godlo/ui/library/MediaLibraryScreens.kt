@@ -1,5 +1,6 @@
 package io.github.eggplants.godlo.ui.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -7,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,12 +24,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +47,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -65,7 +73,9 @@ import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.LibraryLayout
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.library.AudioArt
+import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.MediaFile
+import io.github.eggplants.godlo.library.TreeNode
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
@@ -209,23 +219,35 @@ fun VideoLibraryScreen(container: AppContainer, onOpen: (File) -> Unit) {
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.videoLayout
     val scope = rememberCoroutineScope()
-    var site by rememberSaveable { mutableStateOf<String?>(null) }
-    var deleting by remember { mutableStateOf<MediaFile?>(null) }
-    val videos = library.video.filter { site == null || it.site == site }
+    // The folder being looked at, e.g. "youtube.com/Some playlist"; empty for the sites.
+    var pathKey by rememberSaveable { mutableStateOf("") }
+    val path = pathKey.split("/").filter { it.isNotEmpty() }
+    var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
+    val nodes = LibraryTree.media.children(library.video, path)
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    fun goUp() {
+        pathKey = path.dropLast(1).joinToString("/")
+    }
+    BackHandler(enabled = path.isNotEmpty(), onBack = ::goUp)
+    // A folder whose last video was deleted, here or elsewhere, is gone: step out of it.
+    LaunchedEffect(nodes.isEmpty(), library.loading) {
+        if (nodes.isEmpty() && !library.loading && path.isNotEmpty()) goUp()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_videos)) },
-                actions = {
-                    LayoutMenuButton(layout) { next ->
-                        scope.launch { container.settings.update { it.copy(videoLayout = next) } }
-                    }
-                },
+            LibraryTopBar(
+                root = stringResource(R.string.nav_videos),
+                path = path,
+                onUp = ::goUp,
                 scrollBehavior = scrollBehavior
-            )
+            ) {
+                LayoutMenuButton(layout) { next ->
+                    scope.launch { container.settings.update { it.copy(videoLayout = next) } }
+                }
+            }
         }
     ) { padding ->
         PullToRefreshBox(
@@ -234,15 +256,7 @@ fun VideoLibraryScreen(container: AppContainer, onOpen: (File) -> Unit) {
             modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize()
         ) {
             LibraryGrid(layout, largeMinSize = 240.dp, smallMinSize = 150.dp) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SiteFilterRow(
-                        library.sites(MediaKind.VIDEO),
-                        site,
-                        { site = it },
-                        Modifier.padding(vertical = 4.dp)
-                    )
-                }
-                if (videos.isEmpty() && !library.loading) {
+                if (nodes.isEmpty() && !library.loading) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(
                             Icons.Outlined.Movie,
@@ -251,33 +265,68 @@ fun VideoLibraryScreen(container: AppContainer, onOpen: (File) -> Unit) {
                         )
                     }
                 }
-                items(videos, key = { it.file.absolutePath }) { video ->
+                items(nodes, key = { it.key }) { node ->
                     val modifier = Modifier
                         .animateItem()
-                        .combinedClickable(onClick = { onOpen(video.file) }, onLongClick = {
-                            deleting =
-                                video
-                        })
+                        .combinedClickable(
+                            onClick = {
+                                when (node) {
+                                    is TreeNode.Folder -> pathKey = node.path.joinToString("/")
+                                    is TreeNode.Leaf -> onOpen(node.item.file)
+                                }
+                            },
+                            onLongClick = { deleting = node }
+                        )
+                    val (title, details, file) = when (node) {
+                        is TreeNode.Folder -> Triple(
+                            node.name,
+                            pluralStringResource(R.plurals.entries, node.entries, node.entries),
+                            node.latest.file
+                        )
+
+                        is TreeNode.Leaf -> Triple(
+                            node.item.title,
+                            formatSize(node.item.size),
+                            node.item.file
+                        )
+                    }
+                    val folderEntries = (node as? TreeNode.Folder)?.entries
                     if (layout == LibraryLayout.LIST) {
                         MediaRow(
-                            title = video.title,
-                            details = video.details,
-                            modifier = modifier
+                            title = title,
+                            details = details,
+                            modifier = modifier,
+                            trailing = if (folderEntries != null) {
+                                {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null
+                                    )
+                                }
+                            } else {
+                                null
+                            }
                         ) {
-                            VideoThumbnail(video.file, playIconSize = 24.dp, Modifier.width(128.dp))
+                            VideoThumbnail(
+                                file,
+                                playIconSize = 24.dp,
+                                Modifier.width(128.dp),
+                                folderEntries
+                            )
                         }
                     } else {
                         val compact = layout == LibraryLayout.SMALL_GRID
                         MediaTile(
-                            title = video.title,
-                            details = video.details,
+                            title = title,
+                            details = details,
                             compact = compact,
                             modifier = modifier
                         ) {
                             VideoThumbnail(
-                                video.file,
+                                file,
                                 playIconSize = if (compact) 32.dp else 44.dp,
-                                Modifier.fillMaxWidth()
+                                Modifier.fillMaxWidth(),
+                                folderEntries
                             )
                         }
                     }
@@ -285,15 +334,22 @@ fun VideoLibraryScreen(container: AppContainer, onOpen: (File) -> Unit) {
             }
         }
     }
-    deleting?.let { video ->
-        ConfirmDeleteDialog(video.title, {
-            container.library.delete(video.file)
-        }, { deleting = null })
+    deleting?.let { node ->
+        ConfirmDeleteDialog(node.name, { container.library.delete(*node.dirs.toTypedArray()) }, {
+            deleting =
+                null
+        })
     }
 }
 
+/** A video's first frame; for a folder ([folderEntries] set), a folder badge instead of a play button. */
 @Composable
-private fun VideoThumbnail(file: File, playIconSize: Dp, modifier: Modifier = Modifier) {
+private fun VideoThumbnail(
+    file: File,
+    playIconSize: Dp,
+    modifier: Modifier = Modifier,
+    folderEntries: Int? = null
+) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -312,16 +368,33 @@ private fun VideoThumbnail(file: File, playIconSize: Dp, modifier: Modifier = Mo
                     }
                 }
             )
-            Icon(
-                Icons.Filled.PlayArrow,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(playIconSize)
-                    .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.extraLarge)
-                    .padding(playIconSize / 6)
-            )
+            if (folderEntries == null) {
+                Icon(
+                    Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(playIconSize)
+                        .background(Color.Black.copy(alpha = 0.4f), MaterialTheme.shapes.extraLarge)
+                        .padding(playIconSize / 6)
+                )
+            } else {
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.8f),
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    ) {
+                        Icon(Icons.Filled.Folder, null, Modifier.size(12.dp))
+                        Spacer(Modifier.width(3.dp))
+                        Text("$folderEntries")
+                    }
+                }
+            }
         }
     }
 }
@@ -335,6 +408,7 @@ private fun MediaRow(
     details: String,
     modifier: Modifier = Modifier,
     highlight: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
     leading: @Composable () -> Unit
 ) {
     ListItem(
@@ -348,6 +422,7 @@ private fun MediaRow(
         },
         supportingContent = { Text(details, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingContent = leading,
+        trailingContent = trailing,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = modifier
     )

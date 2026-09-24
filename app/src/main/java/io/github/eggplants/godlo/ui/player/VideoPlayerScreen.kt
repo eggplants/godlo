@@ -39,6 +39,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.library.LibraryTree
+import io.github.eggplants.godlo.library.TreeNode
 import io.github.eggplants.godlo.player.toMediaItem
 import java.io.File
 
@@ -50,10 +52,16 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var controlsVisible by remember { mutableStateOf(true) }
 
-    // The other videos of the library play next, in the order the library lists them.
+    // The other videos of the same folder play next, in the order the video tab lists them.
     val player = remember(path) {
-        val videos = container.library.library.value.video.map { it.file }
-        val playlist = videos.ifEmpty { listOf(File(path)) }
+        val videos = container.library.library.value.video
+        val folder = videos.firstOrNull { it.file.absolutePath == path }?.path?.dropLast(1)
+        val siblings = folder?.let { dir ->
+            LibraryTree.media.children(videos, dir).mapNotNull {
+                (it as? TreeNode.Leaf)?.item?.file
+            }
+        }
+        val playlist = siblings.orEmpty().ifEmpty { listOf(File(path)) }
         val start = playlist.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0)
         ExoPlayer.Builder(context)
             .setAudioAttributes(
