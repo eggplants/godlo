@@ -3,6 +3,7 @@ package io.github.eggplants.godlo.download
 import android.content.Context
 import android.media.MediaScannerConnection
 import androidx.core.content.ContextCompat
+import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.DownloadCallback
 import io.github.eggplants.godlo.core.DownloadRequest
@@ -10,6 +11,7 @@ import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.core.PythonBridge
 import io.github.eggplants.godlo.core.SettingsRepository
+import io.github.eggplants.godlo.core.Storage
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
@@ -155,20 +157,22 @@ class DownloadManager(
         cancelled -= id
         edit(id) { it.copy(state = TaskState.RUNNING) }
         onUpdate(current(id))
-        val configDir = File(settings.root, ".config")
+        val root = settings.root(task.engine)
+        val configDir = Storage.configDir
         val cookies = File(configDir, "cookies.txt").takeIf { it.isFile }?.absolutePath
         val request = DownloadRequest(
             url = task.url,
             engine = task.engine.id,
-            kind = task.kind.dir,
-            root = settings.root,
+            kind = task.kind.id,
+            root = root,
             playlist = task.playlist,
             videoQuality = task.videoQuality,
             audioFormat = task.audioFormat,
             imageFormat = settings.imageFormat,
             cbz = settings.cbz,
             cookies = cookies,
-            configDir = configDir.absolutePath
+            configDir = configDir.absolutePath,
+            lang = AppLanguage.shown()
         )
         var lastEmit = 0L
         val callback = object : DownloadCallback {
@@ -196,7 +200,7 @@ class DownloadManager(
             override fun cancelled(): Boolean = id in cancelled
         }
 
-        File(settings.root).mkdirs()
+        File(root).mkdirs()
         val outcome = python.download(request, callback)
         val state = when (outcome.status) {
             "ok" -> TaskState.DONE

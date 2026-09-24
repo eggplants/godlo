@@ -9,7 +9,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.eggplants.godlo.MainActivity
 
-/** Plays music in the background, with the system media controls. */
+/** Plays audio in the background, with the system media controls. */
 class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
 

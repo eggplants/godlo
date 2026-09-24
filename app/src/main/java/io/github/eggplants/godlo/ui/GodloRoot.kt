@@ -1,18 +1,19 @@
 package io.github.eggplants.godlo.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
@@ -28,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -38,6 +40,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.download.DownloadTarget
 import io.github.eggplants.godlo.download.TaskState
 import io.github.eggplants.godlo.ui.download.DownloadScreen
 import io.github.eggplants.godlo.ui.library.AudioLibraryScreen
@@ -47,14 +51,16 @@ import io.github.eggplants.godlo.ui.player.MiniPlayer
 import io.github.eggplants.godlo.ui.player.NowPlayingScreen
 import io.github.eggplants.godlo.ui.player.VideoPlayerScreen
 import io.github.eggplants.godlo.ui.reader.ReaderScreen
+import io.github.eggplants.godlo.ui.settings.PythonLicensesScreen
 import io.github.eggplants.godlo.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
 
 @Serializable object DownloadsRoute
 
-@Serializable object ImagesRoute
+/** The image library, opened at [path] ("site/title/..."; empty for the sites). */
+@Serializable data class ImagesRoute(val path: String = "")
 
-@Serializable object MusicRoute
+@Serializable object AudioRoute
 
 @Serializable object VideosRoute
 
@@ -66,17 +72,24 @@ import kotlinx.serialization.Serializable
 
 @Serializable object NowPlayingRoute
 
+@Serializable object PythonLicensesRoute
+
 private enum class TopLevel(
     val route: Any,
-    val label: String,
+    @StringRes val label: Int,
     val icon: ImageVector,
     val selectedIcon: ImageVector
 ) {
-    DOWNLOADS(DownloadsRoute, "ダウンロード", Icons.Outlined.Download, Icons.Filled.Download),
-    IMAGES(ImagesRoute, "画像", Icons.Outlined.Image, Icons.Filled.Image),
-    MUSIC(MusicRoute, "音楽", Icons.Outlined.LibraryMusic, Icons.Filled.LibraryMusic),
-    VIDEOS(VideosRoute, "動画", Icons.Outlined.Movie, Icons.Filled.Movie),
-    SETTINGS(SettingsRoute, "設定", Icons.Outlined.Settings, Icons.Filled.Settings)
+    DOWNLOADS(
+        DownloadsRoute,
+        R.string.nav_downloads,
+        Icons.Outlined.Download,
+        Icons.Filled.Download
+    ),
+    IMAGES(ImagesRoute(), R.string.nav_images, Icons.Outlined.Image, Icons.Filled.Image),
+    AUDIO(AudioRoute, R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
+    VIDEOS(VideosRoute, R.string.nav_videos, Icons.Outlined.Movie, Icons.Filled.Movie),
+    SETTINGS(SettingsRoute, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
 @Composable
@@ -84,12 +97,18 @@ fun GodloRoot(container: AppContainer) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
-    val current = TopLevel.entries.firstOrNull { top ->
-        destination?.hierarchy?.any { it.hasRoute(top.route::class) } == true
+    // Before the first destination is set, the start destination is what is about to show:
+    // without this the navigation bar is missing, and taps on it lost, for the first frames.
+    val current = if (destination == null) {
+        TopLevel.DOWNLOADS
+    } else {
+        TopLevel.entries.firstOrNull { top ->
+            destination.hierarchy.any { it.hasRoute(top.route::class) }
+        }
     }
     val tasks by container.downloads.tasks.collectAsStateWithLifecycle()
     val active = tasks.count { it.state == TaskState.QUEUED || it.state == TaskState.RUNNING }
-    val nowPlaying by container.music.state.collectAsStateWithLifecycle()
+    val nowPlaying by container.audio.state.collectAsStateWithLifecycle()
     val sharedUrl by container.sharedUrl.collectAsStateWithLifecycle()
 
     LaunchedEffect(sharedUrl) {
@@ -134,7 +153,7 @@ fun GodloRoot(container: AppContainer) {
                             )
                         }
                     },
-                    label = { Text(top.label) }
+                    label = { Text(stringResource(top.label)) }
                 )
             }
         }
@@ -142,19 +161,55 @@ fun GodloRoot(container: AppContainer) {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 NavHost(nav, startDestination = DownloadsRoute) {
-                    composable<DownloadsRoute> { DownloadScreen(container) }
-                    composable<ImagesRoute> {
-                        ImageLibraryScreen(container, onOpen = {
-                            nav.navigate(ReaderRoute(it.absolutePath))
+                    composable<DownloadsRoute> {
+                        DownloadScreen(container, onOpen = { target ->
+                            when (target) {
+                                is DownloadTarget.Album -> nav.navigate(
+                                    ReaderRoute(target.dir.absolutePath)
+                                )
+
+                                is DownloadTarget.ImageFolder -> nav.navigate(
+                                    ImagesRoute(target.path.joinToString("/"))
+                                ) {
+                                    // Like picking the tab, but at the folder instead of where it was left.
+                                    popUpTo(nav.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
+
+                                is DownloadTarget.Video -> nav.navigate(
+                                    VideoRoute(target.file.absolutePath)
+                                )
+
+                                is DownloadTarget.Audio -> {
+                                    container.audio.play(target.files, 0)
+                                    nav.navigate(NowPlayingRoute)
+                                }
+                            }
                         })
                     }
-                    composable<MusicRoute> { AudioLibraryScreen(container) }
+                    composable<ImagesRoute> {
+                        ImageLibraryScreen(
+                            container,
+                            initialPath = it.toRoute<ImagesRoute>().path,
+                            onOpen = { dir -> nav.navigate(ReaderRoute(dir.absolutePath)) }
+                        )
+                    }
+                    composable<AudioRoute> { AudioLibraryScreen(container) }
                     composable<VideosRoute> {
                         VideoLibraryScreen(container, onOpen = {
                             nav.navigate(VideoRoute(it.absolutePath))
                         })
                     }
-                    composable<SettingsRoute> { SettingsScreen(container) }
+                    composable<SettingsRoute> {
+                        SettingsScreen(container, onOpenPythonLicenses = {
+                            nav.navigate(PythonLicensesRoute)
+                        })
+                    }
+                    composable<PythonLicensesRoute> {
+                        PythonLicensesScreen(onBack = { nav.popBackStack() })
+                    }
                     composable<ReaderRoute> {
                         ReaderScreen(
                             container = container,

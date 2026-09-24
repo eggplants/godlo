@@ -1,6 +1,7 @@
 <resources>
-    <!-- Only what shows before Compose draws: the window background. -->
-    <style name="Theme.Godlo" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Only what shows before Compose draws: the window background. AppCompat, as
+         MainActivity is an AppCompatActivity for the per-app language. -->
+    <style name="Theme.Godlo" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/seed</item>
     </style>
 </resources>

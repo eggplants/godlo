@@ -1,5 +1,6 @@
 package io.github.eggplants.godlo.library
 
+import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.core.SettingsRepository
 import java.io.File
@@ -24,14 +25,17 @@ val AUDIO_EXTENSIONS =
 /** A directory of pages or pictures: a getjmanga episode, a gallery-dl user, ... */
 data class Album(
     val dir: File,
-    val site: String,
-    /** The directory between the site and the album, e.g. the manga series; empty when none. */
-    val group: String,
+    /** Directory names from the tool's directory down: `<site>/[<title>/...]<album>`. */
+    val path: List<String>,
     val cover: File,
     val count: Int,
     val modified: Long
 ) {
     val title: String get() = dir.name
+    val site: String get() = path.first()
+
+    /** The directories between the site and the album, e.g. the manga series; empty when none. */
+    val group: String get() = path.drop(1).dropLast(1).joinToString(" / ")
 }
 
 data class MediaFile(
@@ -57,40 +61,47 @@ data class Library(
     }.distinct().sorted()
 }
 
-/** Everything saved under the save root, found by walking the file system. */
+/**
+ * Everything saved in the tools' directories, found by walking the file system.
+ *
+ * Each tool keeps `<site>/` directories in its own directory, whatever it saved, so what a
+ * file is comes from its extension: a directory of pictures makes an album.
+ */
 class LibraryRepository(settings: SettingsRepository) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private val _library = MutableStateFlow(Library())
     val library: StateFlow<Library> = _library.asStateFlow()
-    private val root = settings.settings.map { it.root }.distinctUntilChanged()
+    private val roots = settings.settings
+        .map { s -> Engine.entries.map { File(s.root(it)) }.distinct() }
+        .distinctUntilChanged()
 
     init {
-        scope.launch { root.collect { refreshNow(it) } }
+        scope.launch { roots.collect { refreshNow(it) } }
     }
 
     fun refresh() {
-        scope.launch { refreshNow(root.first()) }
+        scope.launch { refreshNow(roots.first()) }
     }
 
-    private suspend fun refreshNow(root: String) = lock.withLock {
+    private suspend fun refreshNow(roots: List<File>) = lock.withLock {
         _library.value = Library(
-            albums = scanAlbums(File(root, MediaKind.IMAGE.dir)),
-            audio = scanFiles(File(root, MediaKind.AUDIO.dir), AUDIO_EXTENSIONS),
-            // gallery-dl saves the videos of image sites next to their pictures.
-            video = (
-                scanFiles(File(root, MediaKind.VIDEO.dir), VIDEO_EXTENSIONS) +
-                    scanFiles(File(root, MediaKind.IMAGE.dir), VIDEO_EXTENSIONS)
-                ).sortedByDescending { it.modified },
+            albums = roots.flatMap(::scanAlbums).sortedByDescending { it.modified },
+            audio = roots.flatMap {
+                scanFiles(it, AUDIO_EXTENSIONS)
+            }.sortedByDescending { it.modified },
+            video = roots.flatMap {
+                scanFiles(it, VIDEO_EXTENSIONS)
+            }.sortedByDescending { it.modified },
             loading = false
         )
     }
 
-    /** Deletes an album or a file, and forgets it. */
-    fun delete(target: File) {
+    /** Deletes albums, folders of them or files, and forgets them. */
+    fun delete(vararg targets: File) {
         scope.launch {
-            target.deleteRecursively()
-            refreshNow(root.first())
+            targets.forEach { it.deleteRecursively() }
+            refreshNow(roots.first())
         }
     }
 
@@ -99,54 +110,39 @@ class LibraryRepository(settings: SettingsRepository) {
         val albums = mutableListOf<Album>()
         base.walkTopDown()
             .onEnter { !it.name.startsWith(".") && it.name != "_cbz" }
-            .filter { it.isDirectory }
+            .filter { it.isDirectory && it != base }
             .forEach { dir ->
                 val images = dir.listFiles { f ->
-                    f.isFile &&
-                        f.extension.lowercase() in IMAGE_EXTENSIONS
+                    f.isFile && f.extension.lowercase() in IMAGE_EXTENSIONS
                 }
                 if (images.isNullOrEmpty()) return@forEach
-                val parts = dir.relativeTo(base).invariantSeparatorsPath.split("/")
-                // Pictures straight under the site directory make an album named after the site.
-                val site = parts.first()
-                val group = if (parts.size >
-                    2
-                ) {
-                    parts.subList(1, parts.size - 1).joinToString(" / ")
-                } else {
-                    ""
-                }
                 albums += Album(
                     dir = dir,
-                    site = site,
-                    group = group,
+                    // Pictures straight in <site>/ make an album named after the site.
+                    path = dir.relativeTo(base).invariantSeparatorsPath.split("/"),
                     cover = images.minWith(NaturalOrder.files),
                     count = images.size,
                     modified = images.maxOf { it.lastModified() }
                 )
             }
-        return albums.sortedByDescending { it.modified }
+        return albums
     }
 
     private fun scanFiles(base: File, extensions: Set<String>): List<MediaFile> {
         if (!base.isDirectory) return emptyList()
         return base.walkTopDown()
             .onEnter { !it.name.startsWith(".") }
-            .filter {
-                it.isFile && it.extension.lowercase() in extensions &&
-                    !it.name.endsWith(".part")
-            }
+            .filter { it.isFile && it.extension.lowercase() in extensions && it.parentFile != base }
             .map { file ->
                 val parts = file.parentFile!!.relativeTo(base).invariantSeparatorsPath.split("/")
                 MediaFile(
                     file = file,
-                    site = parts.first().ifEmpty { "unknown" },
+                    site = parts.first(),
                     folder = parts.drop(1).joinToString(" / "),
                     modified = file.lastModified(),
                     size = file.length()
                 )
             }
-            .sortedByDescending { it.modified }
             .toList()
     }
 }

@@ -1,9 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: also what any language without its own values-xx falls back to. -->
 <resources>
-    <string name="app_name">Godlo</string>
-    <string name="share_label">Godlo で保存</string>
-    <string name="downloading">ダウンロード中</string>
-    <string name="download_done">ダウンロード完了</string>
-    <string name="download_failed">ダウンロード失敗</string>
-    <string name="channel_progress">ダウンロードの進行状況</string>
-    <string name="channel_result">ダウンロードの結果</string>
+    <string name="app_name" translatable="false">Godlo</string>
+    <string name="share_label">Save with Godlo</string>
+
+    <!-- Notifications -->
+    <string name="downloading">Downloading</string>
+    <string name="download_done">Download finished</string>
+    <string name="download_failed">Download failed</string>
+    <string name="channel_progress">Download progress</string>
+    <string name="channel_result">Download results</string>
+
+    <!-- Navigation -->
+    <string name="nav_downloads">Downloads</string>
+    <string name="nav_images">Images</string>
+    <string name="nav_audio">Audio</string>
+    <string name="nav_videos">Videos</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- What a download is saved as -->
+    <string name="kind_image">Image</string>
+    <string name="kind_audio">Audio</string>
+    <string name="kind_video">Video</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="search">Search</string>
+    <string name="all">All</string>
+    <string name="delete_title">Delete?</string>
+    <string name="delete_body">“%1$s” will be deleted from this device. This can’t be undone.</string>
+    <string name="layout_button">View: %1$s</string>
+    <string name="layout_selected">Selected</string>
+    <string name="layout_list">List</string>
+    <string name="layout_large_grid">Large grid</string>
+    <string name="layout_small_grid">Small grid</string>
+
+    <!-- Download screen -->
+    <string name="clear_history">Clear history</string>
+    <string name="clear_history_title">Clear history?</string>
+    <plurals name="clear_history_body">
+        <item quantity="one">This removes %1$d finished, failed or cancelled entry. Downloads in progress or waiting, and the saved files, stay.</item>
+        <item quantity="other">This removes %1$d finished, failed or cancelled entries. Downloads in progress or waiting, and the saved files, stay.</item>
+    </plurals>
+    <string name="queue_and_history">Queue &amp; history</string>
+    <string name="storage_access_title">Storage access needed</string>
+    <string name="storage_access_body">To save to Download/Godlo, allow “All files access”.</string>
+    <string name="grant">Allow</string>
+    <string name="paste">Paste</string>
+    <string name="clear">Clear</string>
+    <string name="tool">Tool</string>
+    <string name="format">Format</string>
+    <string name="quality">Quality</string>
+    <string name="quality_best">Best</string>
+    <string name="whole_playlist">Whole playlist</string>
+    <string name="following_episodes">Following episodes too</string>
+    <string name="download">Download</string>
+    <string name="retry">Retry</string>
+    <string name="open">Open</string>
+    <string name="remove_from_history">Remove from history</string>
+    <string name="state_queued">Waiting</string>
+    <string name="state_running">Downloading</string>
+    <string name="state_done">Done</string>
+    <string name="state_done_count">Done (%1$d)</string>
+    <string name="state_failed">Failed</string>
+    <string name="state_cancelled">Cancelled</string>
+
+    <!-- Libraries -->
+    <string name="up_one_level">Up one level</string>
+    <string name="image_search_hint">Search sites, titles, episodes</string>
+    <string name="not_found_title">Nothing found</string>
+    <string name="not_found_body">Nothing contains “%1$s”.</string>
+    <string name="images_empty_title">No images yet</string>
+    <string name="images_empty_body">Images and manga saved with gallery-dl or getjmanga show up here.</string>
+    <string name="audio_empty_title">No audio yet</string>
+    <string name="audio_empty_body">Pick “Audio” on the download screen to save just the sound.</string>
+    <string name="videos_empty_title">No videos yet</string>
+    <string name="videos_empty_body">Videos saved with yt-dlp show up here.</string>
+    <plurals name="entries">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="pages">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+
+    <!-- Audio player -->
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="stop">Stop</string>
+    <string name="now_playing">Now playing</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="shuffle_play">Shuffle play</string>
+    <string name="repeat">Repeat</string>
+
+    <!-- Reader -->
+    <string name="reader_no_images">No images</string>
+    <string name="reader_options">Display options</string>
+    <string name="reader_end">The end</string>
+    <string name="reader_next">Next: %1$s</string>
+    <string name="reader_previous">Previous: %1$s</string>
+    <string name="next_episode">Next episode</string>
+    <string name="previous_episode">Previous episode</string>
+    <string name="reading_direction">Reading direction</string>
+    <string name="pages_per_screen">Pages</string>
+    <string name="cover_alone">Show the cover alone</string>
+    <string name="cover_alone_desc">In spreads, show only page 1 on its own</string>
+    <string name="cover_alone_reader_desc">In spreads, show page 1 alone to shift how the pages pair up</string>
+    <string name="direction_rtl">Right to left (manga)</string>
+    <string name="direction_ltr">Left to right</string>
+    <string name="direction_vertical">Vertical scroll</string>
+    <string name="spread_auto">Auto (spreads in landscape)</string>
+    <string name="spread_auto_short">Auto</string>
+    <string name="spread_single">Single page</string>
+    <string name="spread_spread">Spreads</string>
+
+    <!-- Settings -->
+    <string name="settings_save_location">Save location</string>
+    <string name="settings_root_summary">%1$s/{site}/</string>
+    <string name="settings_config_title">Tool config files</string>
+    <string name="settings_config_body">Put gallery-dl.conf, getjmanga.toml and cookies.txt (Netscape format) in %1$s/ and they are read.</string>
+    <string name="settings_downloads">Downloads</string>
+    <string name="settings_video_quality">Video quality</string>
+    <string name="settings_audio_format">Audio format</string>
+    <string name="settings_manga_format">Manga page format (getjmanga)</string>
+    <string name="settings_cbz">Also make CBZ (getjmanga)</string>
+    <string name="settings_cbz_desc">Also pack each episode into _cbz/ as a .cbz</string>
+    <string name="settings_viewer">Viewer</string>
+    <string name="settings_spread">Spreads</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_desc">Use the wallpaper’s colors (off: the #F5F6F6 theme)</string>
+    <string name="settings_tools">Tools</string>
+    <string name="tools_starting_python">Starting Python…</string>
+    <string name="tools_reset">Use bundled versions</string>
+    <string name="tools_reset_done">Back to the bundled versions. Restart the app to apply.</string>
+    <string name="tools_update">Update to latest</string>
+    <string name="tools_updated">Updated. Restart the app to apply.</string>
+    <string name="tools_update_failed">Update failed.</string>
+    <string name="tools_update_title">Updating tools</string>
+    <string name="root_dialog_title">Save location for %1$s</string>
+    <string name="root_dialog_hint">A {site}/ folder is made inside it for each site.</string>
+    <string name="reset_default">Reset to default</string>
+
+    <!-- About -->
+    <string name="settings_about">About</string>
+    <string name="about_repository">Source code</string>
+    <string name="about_version">Version</string>
+    <string name="about_donate">Donate</string>
+    <string name="about_donate_summary">GitHub Sponsors</string>
+    <string name="about_licenses">Open source licenses</string>
+    <string name="about_licenses_android">Android libraries</string>
+    <string name="about_licenses_python">Other libraries (Python and more)</string>
+    <string name="open_website">Open website</string>
 </resources>

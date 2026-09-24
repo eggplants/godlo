@@ -37,16 +37,20 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.outlined.ClearAll
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +64,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -75,6 +80,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -84,17 +91,21 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.core.Storage
+import io.github.eggplants.godlo.download.DownloadTarget
 import io.github.eggplants.godlo.download.DownloadTask
 import io.github.eggplants.godlo.download.TaskState
 import java.io.File
 import kotlinx.coroutines.launch
 
-val VIDEO_QUALITIES = listOf(
-    "best" to "最高",
+/** yt-dlp's height limits, with their labels. */
+@Composable
+fun videoQualities(): List<Pair<String, String>> = listOf(
+    "best" to stringResource(R.string.quality_best),
     "2160" to "4K",
     "1440" to "1440p",
     "1080" to "1080p",
@@ -112,13 +123,15 @@ fun MediaKind.icon(): ImageVector = when (this) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DownloadScreen(container: AppContainer) {
+fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
     val vm: DownloadViewModel = viewModel { DownloadViewModel(container) }
     val form by vm.form.collectAsStateWithLifecycle()
     val tasks by container.downloads.tasks.collectAsStateWithLifecycle()
-    val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
+    val settings by container.settings.state.collectAsStateWithLifecycle()
+    val library by container.library.library.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var hasAccess by remember { mutableStateOf(Storage.hasAccess(context)) }
+    var confirmingClear by rememberSaveable { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         hasAccess = Storage.hasAccess(context)
         onPauseOrDispose { }
@@ -138,8 +151,11 @@ fun DownloadScreen(container: AppContainer) {
                 title = { Text("Godlo") },
                 actions = {
                     if (tasks.any { it.finished }) {
-                        IconButton(onClick = vm::clearFinished) {
-                            Icon(Icons.Outlined.ClearAll, contentDescription = "完了済みを消去")
+                        IconButton(onClick = { confirmingClear = true }) {
+                            Icon(
+                                Icons.Outlined.DeleteSweep,
+                                contentDescription = stringResource(R.string.clear_history)
+                            )
                         }
                     }
                 },
@@ -171,7 +187,7 @@ fun DownloadScreen(container: AppContainer) {
             item {
                 DownloadFormCard(
                     form = form,
-                    root = settings.root,
+                    roots = settings.roots,
                     vm = vm,
                     onSubmit = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -184,7 +200,7 @@ fun DownloadScreen(container: AppContainer) {
             if (tasks.isNotEmpty()) {
                 item {
                     Text(
-                        "キュー・履歴",
+                        stringResource(R.string.queue_and_history),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
@@ -192,8 +208,12 @@ fun DownloadScreen(container: AppContainer) {
                 }
             }
             items(tasks, key = { it.id }) { task ->
+                val target =
+                    remember(task.state, task.files, library) { DownloadTarget.of(task, library) }
                 TaskCard(
                     task = task,
+                    target = target,
+                    onOpen = { target?.let(onOpen) },
                     onCancel = { vm.cancel(task.id) },
                     onRetry = { vm.retry(task.id) },
                     onRemove = { vm.remove(task.id) },
@@ -201,6 +221,31 @@ fun DownloadScreen(container: AppContainer) {
                 )
             }
         }
+    }
+
+    if (confirmingClear) {
+        val finished = tasks.count { it.finished }
+        AlertDialog(
+            onDismissRequest = { confirmingClear = false },
+            icon = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+            title = { Text(stringResource(R.string.clear_history_title)) },
+            text = {
+                Text(pluralStringResource(R.plurals.clear_history_body, finished, finished))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.clearFinished()
+                    confirmingClear = false
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    confirmingClear = false
+                }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
     }
 }
 
@@ -218,18 +263,18 @@ private fun StorageAccessCard(onGrant: () -> Unit) {
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "ストレージへのアクセスが必要です",
+                    stringResource(R.string.storage_access_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
             Text(
-                "Download/Godlo に保存するため、「すべてのファイルへのアクセス」を許可してください。",
+                stringResource(R.string.storage_access_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
             FilledTonalButton(onClick = onGrant, modifier = Modifier.align(Alignment.End)) {
-                Text("許可する")
+                Text(stringResource(R.string.grant))
             }
         }
     }
@@ -239,7 +284,7 @@ private fun StorageAccessCard(onGrant: () -> Unit) {
 @Composable
 private fun DownloadFormCard(
     form: DownloadForm,
-    root: String,
+    roots: Map<Engine, String>,
     vm: DownloadViewModel,
     onSubmit: () -> Unit
 ) {
@@ -271,11 +316,21 @@ private fun DownloadFormCard(
                                     ?.getItemAt(0)?.text?.toString()
                                 if (text != null) vm.setUrl(text.trim())
                             }
-                        }) { Icon(Icons.Filled.ContentPaste, contentDescription = "貼り付け") }
+                        }) {
+                            Icon(
+                                Icons.Filled.ContentPaste,
+                                contentDescription = stringResource(R.string.paste)
+                            )
+                        }
                     } else {
                         IconButton(onClick = {
                             vm.setUrl("")
-                        }) { Icon(Icons.Filled.Close, contentDescription = "クリア") }
+                        }) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.clear)
+                            )
+                        }
                     }
                 },
                 keyboardOptions = KeyboardOptions(
@@ -290,7 +345,7 @@ private fun DownloadFormCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "ツール",
+                    stringResource(R.string.tool),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.width(56.dp)
                 )
@@ -327,12 +382,12 @@ private fun DownloadFormCard(
                                 Icon(kind.icon(), null, Modifier.size(18.dp))
                             }
                         }
-                    ) { Text(kind.label) }
+                    ) { Text(stringResource(kind.label)) }
                 }
             }
 
             if (form.engine == Engine.YTDLP) {
-                val options = if (form.kind == MediaKind.AUDIO) AUDIO_FORMATS else VIDEO_QUALITIES
+                val options = if (form.kind == MediaKind.AUDIO) AUDIO_FORMATS else videoQualities()
                 val selected = if (form.kind ==
                     MediaKind.AUDIO
                 ) {
@@ -349,9 +404,9 @@ private fun DownloadFormCard(
                         if (form.kind ==
                             MediaKind.AUDIO
                         ) {
-                            "形式"
+                            stringResource(R.string.format)
                         } else {
-                            "画質"
+                            stringResource(R.string.quality)
                         },
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.width(56.dp)
@@ -377,7 +432,17 @@ private fun DownloadFormCard(
             if (form.engine == Engine.YTDLP || form.engine == Engine.GETJMANGA) {
                 ListItem(
                     headlineContent = {
-                        Text(if (form.engine == Engine.YTDLP) "プレイリスト全体" else "続きの話もまとめて")
+                        Text(
+                            stringResource(
+                                if (form.engine ==
+                                    Engine.YTDLP
+                                ) {
+                                    R.string.whole_playlist
+                                } else {
+                                    R.string.following_episodes
+                                }
+                            )
+                        )
                     },
                     leadingContent = {
                         Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null)
@@ -392,7 +457,8 @@ private fun DownloadFormCard(
                 )
             }
 
-            if (form.site.isNotEmpty()) {
+            val engine = form.engine
+            if (form.site.isNotEmpty() && engine != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Folder,
@@ -402,11 +468,8 @@ private fun DownloadFormCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        File(
-                            root,
-                            "${form.kind.dir}/${form.site}"
-                        ).absolutePath.removePrefix("/storage/emulated/0/") +
-                            "/",
+                        File(roots[engine] ?: Storage.defaultRoot(engine), form.site)
+                            .absolutePath.removePrefix("/storage/emulated/0/") + "/",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -422,7 +485,7 @@ private fun DownloadFormCard(
             ) {
                 Icon(Icons.Filled.Download, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("ダウンロード")
+                Text(stringResource(R.string.download))
             }
         }
     }
@@ -431,6 +494,9 @@ private fun DownloadFormCard(
 @Composable
 private fun TaskCard(
     task: DownloadTask,
+    /** Where the finished download opens; null when there is nothing (left) to open. */
+    target: DownloadTarget?,
+    onOpen: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onRemove: () -> Unit,
@@ -489,18 +555,28 @@ private fun TaskCard(
                 }
                 when (task.state) {
                     TaskState.QUEUED, TaskState.RUNNING -> IconButton(onClick = onCancel) {
-                        Icon(Icons.Filled.Stop, "キャンセル")
+                        Icon(Icons.Filled.Stop, stringResource(R.string.cancel))
                     }
 
                     TaskState.FAILED, TaskState.CANCELLED -> IconButton(onClick = onRetry) {
-                        Icon(Icons.Filled.Refresh, "再試行")
+                        Icon(Icons.Filled.Refresh, stringResource(R.string.retry))
                     }
 
-                    TaskState.DONE -> Unit
+                    TaskState.DONE -> if (target != null) {
+                        FilledTonalIconButton(onClick = onOpen) {
+                            when (target) {
+                                is DownloadTarget.Album, is DownloadTarget.ImageFolder ->
+                                    Icon(Icons.Outlined.AutoStories, stringResource(R.string.open))
+
+                                is DownloadTarget.Video, is DownloadTarget.Audio ->
+                                    Icon(Icons.Filled.PlayArrow, stringResource(R.string.play))
+                            }
+                        }
+                    }
                 }
                 if (task.finished) {
                     IconButton(onClick = onRemove) {
-                        Icon(Icons.Filled.Delete, "履歴から削除")
+                        Icon(Icons.Filled.Delete, stringResource(R.string.remove_from_history))
                     }
                 }
             }
@@ -572,10 +648,19 @@ private fun TaskCard(
     }
 }
 
+@Composable
 private fun stateLabel(task: DownloadTask): String = when (task.state) {
-    TaskState.QUEUED -> "待機中"
-    TaskState.RUNNING -> "ダウンロード中"
-    TaskState.DONE -> if (task.files.size > 1) "完了 (${task.files.size})" else "完了"
-    TaskState.FAILED -> "失敗"
-    TaskState.CANCELLED -> "キャンセル"
+    TaskState.QUEUED -> stringResource(R.string.state_queued)
+
+    TaskState.RUNNING -> stringResource(R.string.state_running)
+
+    TaskState.DONE -> if (task.files.size > 1) {
+        stringResource(R.string.state_done_count, task.files.size)
+    } else {
+        stringResource(R.string.state_done)
+    }
+
+    TaskState.FAILED -> stringResource(R.string.state_failed)
+
+    TaskState.CANCELLED -> stringResource(R.string.state_cancelled)
 }

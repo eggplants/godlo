@@ -1,5 +1,6 @@
 package io.github.eggplants.godlo.ui.settings
 
+import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,35 +53,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
+import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.ReadingDirection
 import io.github.eggplants.godlo.core.SpreadMode
 import io.github.eggplants.godlo.core.Storage
 import io.github.eggplants.godlo.core.ThemeMode
 import io.github.eggplants.godlo.ui.download.AUDIO_FORMATS
-import io.github.eggplants.godlo.ui.download.VIDEO_QUALITIES
+import io.github.eggplants.godlo.ui.download.videoQualities
+import io.github.eggplants.godlo.ui.theme.DarkColors
+import io.github.eggplants.godlo.ui.theme.LightColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(container: AppContainer) {
-    val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
+fun SettingsScreen(container: AppContainer, onOpenPythonLicenses: () -> Unit) {
+    val settings by container.settings.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     fun update(transform: (AppSettings) -> AppSettings) {
         scope.launch { container.settings.update(transform) }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var editingRoot by remember { mutableStateOf(false) }
+    var editingRoot by remember { mutableStateOf<Engine?>(null) }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = { TopAppBar(title = { Text("設定") }, scrollBehavior = scrollBehavior) }
+        topBar = {
+            TopAppBar(title = {
+                Text(stringResource(R.string.nav_settings))
+            }, scrollBehavior = scrollBehavior)
+        }
     ) { padding ->
         Column(
             Modifier
@@ -88,74 +105,95 @@ fun SettingsScreen(container: AppContainer) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Section("保存先", Icons.Outlined.Folder) {
+            Section(stringResource(R.string.settings_save_location), Icons.Outlined.Folder) {
+                for (engine in Engine.entries) {
+                    SettingItem(
+                        title = engine.id,
+                        summary = stringResource(
+                            R.string.settings_root_summary,
+                            settings.root(engine)
+                        ),
+                        onClick = { editingRoot = engine }
+                    )
+                }
                 SettingItem(
-                    title = "保存フォルダ",
-                    summary = settings.root + "/{image,audio,video}/{サイト}/",
-                    onClick = { editingRoot = true }
-                )
-                SettingItem(
-                    title = "ツールの設定ファイル",
-                    summary = "${settings.root}/.config/ に gallery-dl.conf・getjmanga.toml・" +
-                        "cookies.txt (Netscape 形式) を置くと読み込みます"
+                    title = stringResource(R.string.settings_config_title),
+                    summary = stringResource(R.string.settings_config_body, Storage.configDir.path)
                 )
             }
 
-            Section("ダウンロード", Icons.Outlined.HighQuality) {
-                ChoiceItem("動画の画質", VIDEO_QUALITIES, settings.videoQuality) { v ->
+            Section(stringResource(R.string.settings_downloads), Icons.Outlined.HighQuality) {
+                ChoiceItem(
+                    stringResource(R.string.settings_video_quality),
+                    videoQualities(),
+                    settings.videoQuality
+                ) { v ->
                     update { it.copy(videoQuality = v) }
                 }
-                ChoiceItem("音楽の形式", AUDIO_FORMATS, settings.audioFormat) { v ->
+                ChoiceItem(
+                    stringResource(R.string.settings_audio_format),
+                    AUDIO_FORMATS,
+                    settings.audioFormat
+                ) { v ->
                     update { it.copy(audioFormat = v) }
                 }
                 ChoiceItem(
-                    "漫画ページの形式 (getjmanga)",
+                    stringResource(R.string.settings_manga_format),
                     listOf("jpg" to "JPEG", "png" to "PNG", "webp" to "WebP"),
                     settings.imageFormat
                 ) { v -> update { it.copy(imageFormat = v) } }
-                SwitchItem("CBZ も作成 (getjmanga)", "各話を _cbz/ に .cbz でもまとめます", settings.cbz) { v ->
+                SwitchItem(
+                    stringResource(R.string.settings_cbz),
+                    stringResource(R.string.settings_cbz_desc),
+                    settings.cbz
+                ) { v ->
                     update { it.copy(cbz = v) }
                 }
             }
 
-            Section("ビューア", Icons.Outlined.AutoStories) {
+            Section(stringResource(R.string.settings_viewer), Icons.Outlined.AutoStories) {
                 ChoiceItem(
-                    "読む方向",
-                    ReadingDirection.entries.map {
-                        it.name to it.label
-                    },
+                    stringResource(R.string.reading_direction),
+                    ReadingDirection.entries.map { it.name to stringResource(it.label) },
                     settings.readingDirection.name
                 ) { v ->
                     update { it.copy(readingDirection = ReadingDirection.valueOf(v)) }
                 }
                 ChoiceItem(
-                    "見開き",
-                    SpreadMode.entries.map {
-                        it.name to it.label
-                    },
+                    stringResource(R.string.settings_spread),
+                    SpreadMode.entries.map { it.name to stringResource(it.label) },
                     settings.spreadMode.name
                 ) { v ->
                     update { it.copy(spreadMode = SpreadMode.valueOf(v)) }
                 }
-                SwitchItem("表紙を単独で表示", "見開きで 1 ページ目だけを単独にします", settings.coverAlone) { v ->
+                SwitchItem(
+                    stringResource(R.string.cover_alone),
+                    stringResource(R.string.cover_alone_desc),
+                    settings.coverAlone
+                ) { v ->
                     update { it.copy(coverAlone = v) }
                 }
             }
 
-            Section("外観", Icons.Outlined.Palette) {
+            Section(stringResource(R.string.settings_appearance), Icons.Outlined.Palette) {
                 ChoiceItem(
-                    "テーマ",
-                    ThemeMode.entries.map {
-                        it.name to it.label
+                    stringResource(R.string.settings_language),
+                    AppLanguage.options.map { (tag, name) ->
+                        tag to (name ?: stringResource(R.string.settings_language_system))
                     },
+                    AppLanguage.current()
+                ) { tag -> AppLanguage.set(tag) }
+                ChoiceItem(
+                    stringResource(R.string.settings_theme),
+                    ThemeMode.entries.map { it.name to stringResource(it.label) },
                     settings.themeMode.name
                 ) { v ->
                     update { it.copy(themeMode = ThemeMode.valueOf(v)) }
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     SwitchItem(
-                        "ダイナミックカラー",
-                        "壁紙の色を使います (オフで #F5F6F6 のテーマ)",
+                        stringResource(R.string.settings_dynamic_color),
+                        stringResource(R.string.settings_dynamic_color_desc),
                         settings.dynamicColor
                     ) { v ->
                         update { it.copy(dynamicColor = v) }
@@ -164,14 +202,19 @@ fun SettingsScreen(container: AppContainer) {
             }
 
             ToolsSection(container)
+
+            AboutSection(onOpenPythonLicenses)
         }
     }
 
-    if (editingRoot) {
+    editingRoot?.let { engine ->
         RootDialog(
-            current = settings.root,
-            onDismiss = { editingRoot = false },
-            onSave = { root -> update { it.copy(root = root.trimEnd('/')) } }
+            engine = engine,
+            current = settings.root(engine),
+            onDismiss = { editingRoot = null },
+            onSave = { root ->
+                update { it.copy(roots = it.roots + (engine to root.trimEnd('/'))) }
+            }
         )
     }
 }
@@ -190,11 +233,15 @@ private fun ToolsSection(container: AppContainer) {
                 }.getOrElse { mapOf("error" to (it.message ?: "")) }
             }
     }
-    Section("ツール", Icons.Outlined.Build) {
+    // Read here: the buttons below set them from outside composition.
+    val resetDone = stringResource(R.string.tools_reset_done)
+    val updated = stringResource(R.string.tools_updated)
+    val updateFailed = stringResource(R.string.tools_update_failed)
+    Section(stringResource(R.string.settings_tools), Icons.Outlined.Build) {
         val current = versions
         if (current == null) {
             ListItem(
-                headlineContent = { Text("Python を起動中…") },
+                headlineContent = { Text(stringResource(R.string.tools_starting_python)) },
                 leadingContent = { CircularProgressIndicator(Modifier.size(24.dp)) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
@@ -213,9 +260,9 @@ private fun ToolsSection(container: AppContainer) {
                 enabled = !updating,
                 onClick = {
                     container.python.resetTools()
-                    result = "同梱版に戻しました。アプリを再起動すると反映されます。"
+                    result = resetDone
                 }
-            ) { Text("同梱版に戻す") }
+            ) { Text(stringResource(R.string.tools_reset)) }
             FilledTonalButton(
                 enabled = !updating,
                 onClick = {
@@ -224,21 +271,23 @@ private fun ToolsSection(container: AppContainer) {
                         val outcome = withContext(Dispatchers.IO) { container.python.updateTools() }
                         updating = false
                         result = if (outcome.status == "ok") {
-                            "更新しました。アプリを再起動すると反映されます。\n\n" + outcome.message.takeLast(600)
+                            updated + "\n\n" + outcome.message.takeLast(600)
                         } else {
-                            "更新に失敗しました。\n\n" + outcome.message.takeLast(1200)
+                            updateFailed + "\n\n" + outcome.message.takeLast(1200)
                         }
                         refresh++
                     }
                 }
-            ) { Text("最新版に更新") }
+            ) { Text(stringResource(R.string.tools_update)) }
         }
     }
     result?.let { text ->
         AlertDialog(
             onDismissRequest = { result = null },
-            confirmButton = { TextButton(onClick = { result = null }) { Text("OK") } },
-            title = { Text("ツールの更新") },
+            confirmButton = {
+                TextButton(onClick = { result = null }) { Text(stringResource(R.string.ok)) }
+            },
+            title = { Text(stringResource(R.string.tools_update_title)) },
             text = {
                 Text(
                     text,
@@ -252,17 +301,29 @@ private fun ToolsSection(container: AppContainer) {
 }
 
 @Composable
-private fun RootDialog(current: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+private fun RootDialog(
+    engine: Engine,
+    current: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
     var value by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("保存フォルダ") },
+        title = { Text(stringResource(R.string.root_dialog_title, engine.id)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = value, onValueChange = {
                     value = it
                 }, singleLine = false, modifier = Modifier.fillMaxWidth())
-                TextButton(onClick = { value = Storage.defaultRoot }) { Text("既定に戻す") }
+                Text(
+                    stringResource(R.string.root_dialog_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(onClick = {
+                    value = Storage.defaultRoot(engine)
+                }) { Text(stringResource(R.string.reset_default)) }
             }
         },
         confirmButton = {
@@ -272,9 +333,11 @@ private fun RootDialog(current: String, onDismiss: () -> Unit, onSave: (String) 
                     onSave(value)
                     onDismiss()
                 }
-            ) { Text("保存") }
+            ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("キャンセル") } }
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
     )
 }
 
@@ -305,6 +368,48 @@ private fun Section(title: String, icon: ImageVector, content: @Composable () ->
         ) {
             Column { content() }
         }
+    }
+}
+
+private const val REPOSITORY = "https://github.com/eggplants/godlo"
+private const val SPONSORS = "https://github.com/sponsors/eggplants"
+
+@Composable
+private fun AboutSection(onOpenPythonLicenses: () -> Unit) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val version = remember {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        "${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
+    }
+    val licensesTitle = stringResource(R.string.about_licenses_android)
+    Section(stringResource(R.string.settings_about), Icons.Outlined.Info) {
+        SettingItem(
+            title = stringResource(R.string.about_repository),
+            summary = REPOSITORY.removePrefix("https://"),
+            onClick = { uriHandler.openUri(REPOSITORY) }
+        )
+        SettingItem(title = stringResource(R.string.about_version), summary = version)
+        SettingItem(
+            title = stringResource(R.string.about_donate),
+            summary = stringResource(R.string.about_donate_summary),
+            onClick = { uriHandler.openUri(SPONSORS) }
+        )
+        SettingItem(
+            title = stringResource(R.string.about_licenses),
+            summary = licensesTitle,
+            onClick = {
+                // Its own Compose screen: give it the app's colors rather than its defaults.
+                OssLicensesMenuActivity.setTheme(LightColors, DarkColors, Typography())
+                OssLicensesMenuActivity.setActivityTitle(licensesTitle)
+                context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
+            }
+        )
+        SettingItem(
+            title = stringResource(R.string.about_licenses),
+            summary = stringResource(R.string.about_licenses_python),
+            onClick = onOpenPythonLicenses
+        )
     }
 }
 
@@ -378,7 +483,9 @@ private fun ChoiceItem(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("閉じる") } }
+            confirmButton = {
+                TextButton(onClick = { open = false }) { Text(stringResource(R.string.close)) }
+            }
         )
     }
 }

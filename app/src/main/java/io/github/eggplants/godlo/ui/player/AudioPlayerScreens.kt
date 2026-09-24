@@ -19,9 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -51,19 +51,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import io.github.eggplants.godlo.AppContainer
-import io.github.eggplants.godlo.player.MusicPlayer
+import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.player.AudioPlayer
 import io.github.eggplants.godlo.ui.components.formatDuration
 import kotlinx.coroutines.delay
 
 /** Where playback is, polled while it is on screen: the controller has no position callback. */
 @Composable
-private fun rememberPosition(player: MusicPlayer, playing: Boolean): Long {
+private fun rememberPosition(player: AudioPlayer, playing: Boolean): Long {
     var position by remember { mutableLongStateOf(player.positionMs) }
     LaunchedEffect(playing) {
         while (true) {
@@ -89,7 +91,7 @@ private fun Artwork(bytes: ByteArray?, modifier: Modifier = Modifier) {
             Image(bitmap, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         } else {
             Icon(
-                Icons.Filled.MusicNote,
+                Icons.Filled.AudioFile,
                 null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.fillMaxSize(0.4f)
@@ -100,8 +102,8 @@ private fun Artwork(bytes: ByteArray?, modifier: Modifier = Modifier) {
 
 @Composable
 fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
-    val state by container.music.state.collectAsStateWithLifecycle()
-    val position = rememberPosition(container.music, state.isPlaying)
+    val state by container.audio.state.collectAsStateWithLifecycle()
+    val position = rememberPosition(container.audio, state.isPlaying)
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand)
@@ -143,16 +145,18 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
                         )
                     }
                 }
-                IconButton(onClick = container.music::toggle) {
+                IconButton(onClick = container.audio::toggle) {
                     Icon(
                         if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        if (state.isPlaying) "一時停止" else "再生"
+                        stringResource(if (state.isPlaying) R.string.pause else R.string.play)
                     )
                 }
-                IconButton(onClick = container.music::next, enabled = state.hasNext) {
-                    Icon(Icons.Filled.SkipNext, "次へ")
+                IconButton(onClick = container.audio::next, enabled = state.hasNext) {
+                    Icon(Icons.Filled.SkipNext, stringResource(R.string.next))
                 }
-                IconButton(onClick = container.music::stop) { Icon(Icons.Filled.Close, "停止") }
+                IconButton(onClick = container.audio::stop) {
+                    Icon(Icons.Filled.Close, stringResource(R.string.stop))
+                }
             }
         }
     }
@@ -160,9 +164,9 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
 
 @Composable
 fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
-    val music = container.music
-    val state by music.state.collectAsStateWithLifecycle()
-    val position = rememberPosition(music, state.isPlaying)
+    val audio = container.audio
+    val state by audio.state.collectAsStateWithLifecycle()
+    val position = rememberPosition(audio, state.isPlaying)
     var seeking by remember { mutableStateOf<Float?>(null) }
     LaunchedEffect(state.active) { if (!state.active) onBack() }
 
@@ -177,9 +181,11 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { Icon(Icons.Filled.KeyboardArrowDown, "閉じる") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.KeyboardArrowDown, stringResource(R.string.close))
+                    }
                     Text(
-                        "再生中",
+                        stringResource(R.string.now_playing),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center
@@ -217,7 +223,7 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                         value = seeking ?: position.toFloat(),
                         onValueChange = { seeking = it },
                         onValueChangeFinished = {
-                            seeking?.let { music.seekTo(it.toLong()) }
+                            seeking?.let { audio.seekTo(it.toLong()) }
                             seeking = null
                         },
                         valueRange = 0f..state.durationMs.coerceAtLeast(1).toFloat()
@@ -239,15 +245,19 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         IconToggleButton(checked = state.shuffle, onCheckedChange = {
-                            music.toggleShuffle()
+                            audio.toggleShuffle()
                         }) {
-                            Icon(Icons.Filled.Shuffle, "シャッフル")
+                            Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle))
                         }
-                        IconButton(onClick = music::previous, modifier = Modifier.size(56.dp)) {
-                            Icon(Icons.Filled.SkipPrevious, "前へ", Modifier.size(32.dp))
+                        IconButton(onClick = audio::previous, modifier = Modifier.size(56.dp)) {
+                            Icon(
+                                Icons.Filled.SkipPrevious,
+                                stringResource(R.string.previous),
+                                Modifier.size(32.dp)
+                            )
                         }
                         FilledIconButton(
-                            onClick = music::toggle,
+                            onClick = audio::toggle,
                             modifier = Modifier.size(80.dp),
                             // Morphs from a circle to a rounded square while playing.
                             shape = if (state.isPlaying) {
@@ -259,20 +269,26 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                         ) {
                             Icon(
                                 if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                if (state.isPlaying) "一時停止" else "再生",
+                                stringResource(
+                                    if (state.isPlaying) R.string.pause else R.string.play
+                                ),
                                 Modifier.size(40.dp)
                             )
                         }
                         IconButton(
-                            onClick = music::next,
+                            onClick = audio::next,
                             enabled = state.hasNext,
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Filled.SkipNext, "次へ", Modifier.size(32.dp))
+                            Icon(
+                                Icons.Filled.SkipNext,
+                                stringResource(R.string.next),
+                                Modifier.size(32.dp)
+                            )
                         }
                         IconToggleButton(
                             checked = state.repeatMode != Player.REPEAT_MODE_OFF,
-                            onCheckedChange = { music.cycleRepeat() }
+                            onCheckedChange = { audio.cycleRepeat() }
                         ) {
                             Icon(
                                 if (state.repeatMode ==
@@ -282,7 +298,7 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                                 } else {
                                     Icons.Filled.Repeat
                                 },
-                                "リピート"
+                                stringResource(R.string.repeat)
                             )
                         }
                     }

@@ -1,7 +1,8 @@
 """The one module Kotlin calls: pick a tool for a URL, run it, report back.
 
-Every tool saves under `<root>/<kind>/<site>/`, where kind is image, audio or
-video and site is the URL's host without `www.`. The Kotlin side hands over a
+Every tool saves under `<root>/<site>/`, where root is the tool's directory
+(`Download/Godlo/<tool>` unless the user moved it) and site is the URL's host
+without `www.`. The Kotlin side hands over a
 `callback` object (see `PythonBridge.kt`) that takes progress, the files
 written and log lines, and says whether the user cancelled.
 """
@@ -20,6 +21,46 @@ ENGINES = ("yt-dlp", "gallery-dl", "getjmanga")
 KINDS = ("image", "audio", "video")
 
 _env: dict[str, str] = {}
+
+#: What this module writes for the app to show, in the app's UI languages; English is the fallback.
+_MESSAGES = {
+    "en": {
+        "fetching": "Fetching info",
+        "eta": "{eta} left",
+        "converting": "Converting: {step}",
+        "unsupported": "gallery-dl does not support this URL",
+        "picture": "Picture {n}: {name}",
+        "existing": "Already saved: {name}",
+        "saved_pictures": "{n} pictures saved",
+        "gallery_failed": "gallery-dl failed (status {status})",
+        "episodes": "{n} episodes",
+        "pages": "{done}/{total} pages",
+        "locked": "Locked: {title}",
+        "already_saved": "Already saved: {title}",
+        "nothing_readable": "No readable episode (all locked)",
+    },
+    "ja": {
+        "fetching": "情報を取得中",
+        "eta": "残り {eta}",
+        "converting": "変換中: {step}",
+        "unsupported": "gallery-dl はこの URL に対応していません",
+        "picture": "{n} 枚目: {name}",
+        "existing": "既存: {name}",
+        "saved_pictures": "{n} 枚保存",
+        "gallery_failed": "gallery-dl が失敗しました (status {status})",
+        "episodes": "{n} 話",
+        "pages": "{done}/{total} ページ",
+        "locked": "ロック中: {title}",
+        "already_saved": "保存済み: {title}",
+        "nothing_readable": "読めるエピソードがありません (ロック中)",
+    },
+}
+_lang = "en"
+
+
+def _t(key: str, **values: object) -> str:
+    """The message `key` in the language of the download being run."""
+    return _MESSAGES.get(_lang, _MESSAGES["en"])[key].format(**values)
 
 
 class Cancelled(BaseException):
@@ -143,6 +184,8 @@ def download(request_json: str, callback: object) -> str:
         `{"status": "ok" | "cancelled" | "error", "message"}` as JSON.
     """
     request = json.loads(request_json)
+    global _lang  # noqa: PLW0603 -- one download runs at a time
+    _lang = request.get("lang") or "en"
     handler = _CallbackLogHandler(callback)
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
@@ -207,8 +250,8 @@ def _check(callback: object) -> None:
         raise Cancelled
 
 
-def _target_dir(request: dict, kind: str, site: str) -> Path:
-    path = Path(request["root"]) / kind / site
+def _target_dir(request: dict, site: str) -> Path:
+    path = Path(request["root"]) / site
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -237,13 +280,10 @@ class _YtdlpLogger:
 def _run_ytdlp(request: dict, callback: object) -> None:
     import yt_dlp
 
-    kind = request["kind"]
-    if kind == "image":
-        kind = "video"
-    audio = kind == "audio"
+    audio = request["kind"] == "audio"
     url = request["url"].strip()
     site = site_of(url)
-    out_dir = _target_dir(request, kind, site)
+    out_dir = _target_dir(request, site)
     playlist = bool(request.get("playlist"))
     template = "%(title).150B [%(id)s].%(ext)s"
     if playlist:
@@ -263,7 +303,7 @@ def _run_ytdlp(request: dict, callback: object) -> None:
             if speed and "Unknown" not in speed:
                 parts.append(speed)
             if eta and "Unknown" not in eta:
-                parts.append("残り " + eta)
+                parts.append(_t("eta", eta=eta))
             callback.progress(fraction, "  ".join(parts))
             title = info.get("title")
             if title:
@@ -272,7 +312,7 @@ def _run_ytdlp(request: dict, callback: object) -> None:
     def postprocessor_hook(d: dict) -> None:
         _check(callback)
         if d.get("status") == "started" and d.get("postprocessor") != "MoveFiles":
-            callback.progress(-1.0, "変換中: " + d.get("postprocessor", ""))
+            callback.progress(-1.0, _t("converting", step=d.get("postprocessor", "")))
 
     def post_hook(path: str) -> None:
         # Called once per video with the final path, after every postprocessor.
@@ -329,7 +369,7 @@ def _run_ytdlp(request: dict, callback: object) -> None:
     ]
     opts["postprocessors"] = postprocessors
 
-    callback.progress(-1.0, "情報を取得中")
+    callback.progress(-1.0, _t("fetching"))
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.extract_info(url, download=True)
 
@@ -342,7 +382,7 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
 
     url = request["url"].strip()
     site = site_of(url)
-    base = _target_dir(request, "image", site)
+    base = _target_dir(request, site)
 
     config.clear()
     config_file = Path(request.get("config_dir") or _env["config_dir"]) / "gallery-dl.conf"
@@ -358,7 +398,7 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
     # The site directory stands in for gallery-dl's leading "{category}".
     first = extractor.find(url)
     if first is None:
-        msg = "gallery-dl はこの URL に対応していません"
+        msg = _t("unsupported")
         raise ValueError(msg)
     fmt = first.directory_fmt
     if isinstance(fmt, (list, tuple)) and fmt and fmt[0] == "{category}":
@@ -369,16 +409,18 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
 
         def start(self, path: str) -> None:
             _check(callback)
-            callback.progress(-1.0, f"{Out.count + 1} 枚目: {os.path.basename(path)}")
+            callback.progress(-1.0, _t("picture", n=Out.count + 1, name=os.path.basename(path)))
 
         def skip(self, path: str) -> None:
             _check(callback)
-            callback.progress(-1.0, f"既存: {os.path.basename(path)}")
+            # Already on disk, but still what this download is: the app opens it from here.
+            callback.file(path)
+            callback.progress(-1.0, _t("existing", name=os.path.basename(path)))
 
         def success(self, path: str) -> None:
             Out.count += 1
             callback.file(path)
-            callback.progress(-1.0, f"{Out.count} 枚保存")
+            callback.progress(-1.0, _t("saved_pictures", n=Out.count))
 
         def progress(self, bytes_total, bytes_downloaded, bytes_per_second) -> None:  # noqa: ANN001
             _check(callback)
@@ -397,10 +439,10 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
                 callback.title(str(title))
             super().handle_directory(kwdict)
 
-    callback.progress(-1.0, "情報を取得中")
+    callback.progress(-1.0, _t("fetching"))
     status = Job(url).run()
     if status and not Out.count:
-        msg = f"gallery-dl が失敗しました (status {status})"
+        msg = _t("gallery_failed", status=status)
         raise RuntimeError(msg)
 
 
@@ -413,7 +455,8 @@ def _run_getjmanga(request: dict, callback: object) -> None:
     from getjmanga.console import Display
 
     url = request["url"].strip()
-    root = Path(request["root"]) / "image"
+    # getjmanga makes the <site>/ directory itself.
+    root = Path(request["root"])
     root.mkdir(parents=True, exist_ok=True)
 
     # Same site naming as everything else: the host without www.
@@ -424,10 +467,10 @@ def _run_getjmanga(request: dict, callback: object) -> None:
         current = None
 
         def work(self, url: str) -> None:
-            callback.progress(-1.0, "情報を取得中")
+            callback.progress(-1.0, _t("fetching"))
 
         def series(self, total: int) -> None:
-            callback.log(f"{total} 話")
+            callback.log(_t("episodes", n=total))
 
         def fetching(self, url: str) -> None:
             _check(callback)
@@ -436,16 +479,18 @@ def _run_getjmanga(request: dict, callback: object) -> None:
             Report.current = episode
             _check(callback)
             callback.title(f"{episode.series_title} {episode.episode_title}")
-            callback.progress(done / total if total else -1.0, f"{done}/{total} ページ")
+            callback.progress(done / total if total else -1.0, _t("pages", done=done, total=total))
 
         def finished(self, result) -> None:  # noqa: ANN001
             Report.current = None
-            if result.status == "saved":
-                callback.file(str(result.save_dir))
-            elif result.status == "locked":
-                callback.log(f"ロック中: {result.episode.episode_title}")
-            else:
-                callback.log(f"保存済み: {result.episode.episode_title}")
+            # Set here too: an episode that was already saved never reaches pages().
+            callback.title(f"{result.episode.series_title} {result.episode.episode_title}")
+            if result.status == "locked":
+                callback.log(_t("locked", title=result.episode.episode_title))
+                return
+            if result.status == "exists":
+                callback.log(_t("already_saved", title=result.episode.episode_title))
+            callback.file(str(result.save_dir))
 
         def done(self) -> None:
             pass
@@ -473,7 +518,7 @@ def _run_getjmanga(request: dict, callback: object) -> None:
             shutil.rmtree(partial, ignore_errors=True)
         raise
     if results and all(r.status == "locked" for r in results):
-        msg = "読めるエピソードがありません (ロック中)"
+        msg = _t("nothing_readable")
         raise RuntimeError(msg)
 
 

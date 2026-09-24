@@ -5,7 +5,6 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -30,7 +29,7 @@ data class NowPlaying(
 }
 
 /** The app's handle on [PlaybackService]: a [MediaController], and what it is playing. */
-class MusicPlayer(private val context: Context) {
+class AudioPlayer(private val context: Context) {
     private var controller: MediaController? = null
     private val pending = mutableListOf<(MediaController) -> Unit>()
     private val _state = MutableStateFlow(NowPlaying())
@@ -96,7 +95,10 @@ class MusicPlayer(private val context: Context) {
         val meta = player.mediaMetadata
         _state.value = NowPlaying(
             path = item?.mediaId,
-            title = meta.title?.toString() ?: item?.mediaMetadata?.title?.toString().orEmpty(),
+            // The file's own tags first; its name when it has none.
+            title =
+                meta.title?.toString()
+                    ?: item?.mediaId?.let { File(it).nameWithoutExtension }.orEmpty(),
             artist = meta.artist?.toString() ?: meta.albumArtist?.toString().orEmpty(),
             artwork = meta.artworkData,
             isPlaying = player.isPlaying,
@@ -109,8 +111,8 @@ class MusicPlayer(private val context: Context) {
     }
 }
 
+/** No title here: one set on the item would hide the title tag inside the file. */
 fun File.toMediaItem(): MediaItem = MediaItem.Builder()
     .setMediaId(absolutePath)
     .setUri(Uri.fromFile(this))
-    .setMediaMetadata(MediaMetadata.Builder().setTitle(nameWithoutExtension).build())
     .build()

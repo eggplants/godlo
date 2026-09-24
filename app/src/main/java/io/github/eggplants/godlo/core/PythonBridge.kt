@@ -38,7 +38,9 @@ data class DownloadRequest(
     val cbz: Boolean = false,
     val cookies: String? = null,
     /** Holds `gallery-dl.conf` and `getjmanga.toml`, when the user put them there. */
-    @SerialName("config_dir") val configDir: String? = null
+    @SerialName("config_dir") val configDir: String? = null,
+    /** The UI language, "ja" or "en", for the progress and error text Python writes. */
+    val lang: String = "en"
 )
 
 @Serializable

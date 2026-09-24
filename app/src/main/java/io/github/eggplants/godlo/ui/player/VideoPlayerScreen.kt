@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
@@ -37,6 +38,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.player.toMediaItem
 import java.io.File
 
@@ -109,7 +111,7 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
                 onClick = onBack,
                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                 modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(8.dp)
-            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る") }
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
         }
     }
 }

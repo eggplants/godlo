@@ -18,10 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.eggplants.godlo.R
 
-/** "すべて" plus one chip per site; null selects everything. */
+/** "All" plus one chip per site; null selects everything. */
 @Composable
 fun SiteFilterRow(
     sites: List<String>,
@@ -38,7 +40,7 @@ fun SiteFilterRow(
         item {
             FilterChip(selected = selected == null, onClick = {
                 onSelect(null)
-            }, label = { Text("すべて") })
+            }, label = { Text(stringResource(R.string.all)) })
         }
         items(sites) { site ->
             FilterChip(selected = selected == site, onClick = {
@@ -75,15 +77,17 @@ fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifie
 fun ConfirmDeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("削除しますか？") },
-        text = { Text("「$name」を端末から削除します。元に戻せません。") },
+        title = { Text(stringResource(R.string.delete_title)) },
+        text = { Text(stringResource(R.string.delete_body, name)) },
         confirmButton = {
             TextButton(onClick = {
                 onConfirm()
                 onDismiss()
-            }) { Text("削除", color = MaterialTheme.colorScheme.error) }
+            }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("キャンセル") } }
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
     )
 }
 

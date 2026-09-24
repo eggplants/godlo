@@ -1,8 +1,11 @@
+import javax.inject.Inject
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.chaquopy)
+    alias(libs.plugins.oss.licenses)
 }
 
 android {
@@ -38,6 +41,17 @@ android {
     buildFeatures {
         compose = true
     }
+    bundle {
+        language {
+            // The UI language can be switched in the app, so every language has to be installed.
+            enableSplit = false
+        }
+    }
+    androidResources {
+        // Lists the languages with values-xx/ for the system's per-app language settings
+        // (Android 13+); res/resources.properties names what plain values/ is in.
+        generateLocaleConfig = true
+    }
     packaging {
         jniLibs {
             // ffmpeg is run as an executable out of nativeLibraryDir, so it must be extracted.
@@ -67,7 +81,7 @@ chaquopy {
         pip {
             // getjmanga asks for cryptography>=43, but Chaquopy's newest Android build is 42.0.8,
             // which has the AES-CBC API getjmanga uses. Resolve the tree by hand instead of pip.
-            options("--no-deps")
+            options("--no-deps", "--find-links", rootProject.file("native/wheels").absolutePath)
             install("pip")
             install("yt-dlp")
             install("yt-dlp-ejs")
@@ -93,6 +107,12 @@ chaquopy {
             install("xmltodict")
             install("cryptography==42.0.8")
             install("cffi==1.17.1")
+            // Chaquopy's builds of cffi and pillow link against these; --no-deps skips them.
+            install("chaquopy-libffi")
+            // Chaquopy's own builds of these two are aligned to 4 KB pages, which 16 KB page
+            // devices refuse to load; native/pillow-libs/build.sh rebuilds them.
+            install("chaquopy-libjpeg==1.5.3+16k")
+            install("chaquopy-freetype==2.9.1+16k")
             install("pycparser==2.22")
             install("httpx2")
             install("httpcore2")
@@ -111,9 +131,58 @@ chaquopy {
     }
 }
 
+/**
+ * Writes python_licenses.json into the APK's assets: what pip installed, with its licenses,
+ * which the OSS Licenses plugin does not see. See native/licenses/python_licenses.py.
+ */
+abstract class PythonLicenses : DefaultTask() {
+    @get:InputDirectory
+    abstract val pipDir: DirectoryProperty
+
+    @get:InputFile
+    abstract val script: RegularFileProperty
+
+    @get:Input
+    abstract val python: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val exec: ExecOperations
+
+    @TaskAction
+    fun generate() {
+        exec.exec {
+            commandLine(
+                python.get(),
+                script.get().asFile.absolutePath,
+                pipDir.get().asFile.absolutePath,
+                outputDir.file("python_licenses.json").get().asFile.absolutePath
+            )
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val name = variant.name.replaceFirstChar { it.uppercase() }
+        val task = tasks.register<PythonLicenses>("generate${name}PythonLicenses") {
+            dependsOn("install${name}PythonRequirements")
+            pipDir.set(layout.buildDirectory.dir("python/pip/${variant.name}/common"))
+            script.set(rootProject.file("native/licenses/python_licenses.py"))
+            python.set(hostPython ?: "python3.13")
+            outputDir.set(layout.buildDirectory.dir("generated/pythonLicenses/${variant.name}"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(task, PythonLicenses::outputDir)
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    // Per-app UI language (AppCompatDelegate.setApplicationLocales) on every Android version.
+    implementation(libs.androidx.appcompat)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -133,6 +202,8 @@ dependencies {
     implementation(libs.telephoto.zoomable.image.coil3)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.commons.compress)
+    // The license screen for the Maven dependencies; see pythonLicenses below for the rest.
+    implementation(libs.play.services.oss.licenses)
     // Only the prebuilt binaries: ffmpeg, QuickJS (libqjs.so) and the shared libraries ffmpeg
     // links against (inside libpython.zip.so). Godlo unpacks and runs them itself.
     implementation(libs.youtubedl.android.ffmpeg) { isTransitive = false }

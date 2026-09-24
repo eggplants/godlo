@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.Godlo" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Godlo" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/background_dark</item>
     </style>
 </resources>

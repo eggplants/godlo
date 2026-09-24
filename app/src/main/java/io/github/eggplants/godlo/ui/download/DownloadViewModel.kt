@@ -1,5 +1,6 @@
 package io.github.eggplants.godlo.ui.download
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.eggplants.godlo.AppContainer
@@ -74,7 +75,11 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
     private suspend fun detect(url: String) {
         _form.update { it.copy(detecting = true) }
         val found =
-            withContext(Dispatchers.IO) { runCatching { container.python.detect(url) }.getOrNull() }
+            withContext(Dispatchers.IO) {
+                runCatching { container.python.detect(url) }
+                    .onFailure { Log.w("Godlo", "detect failed: $url", it) }
+                    .getOrNull()
+            }
         _form.update { form ->
             if (form.url.trim() != url) return@update form
             if (found ==
@@ -93,7 +98,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                 form.copy(
                     detecting = false,
                     engine = Engine.fromId(found.engine),
-                    kind = MediaKind.fromDir(found.kind),
+                    kind = MediaKind.fromId(found.kind),
                     site = site
                 )
             }

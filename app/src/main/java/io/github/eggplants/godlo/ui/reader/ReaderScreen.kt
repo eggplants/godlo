@@ -76,6 +76,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -85,6 +86,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.ReadingDirection
 import io.github.eggplants.godlo.core.SpreadMode
@@ -129,7 +131,11 @@ fun ReaderScreen(
         if (loaded == null || prefs == null) {
             CircularProgressIndicator(Modifier.align(Alignment.Center))
         } else if (loaded.pages.isEmpty()) {
-            Text("画像がありません", color = Color.White, modifier = Modifier.align(Alignment.Center))
+            Text(
+                stringResource(R.string.reader_no_images),
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center)
+            )
         } else {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val landscape = maxWidth > maxHeight
@@ -171,7 +177,9 @@ fun ReaderScreen(
                     Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
                     Column(Modifier.weight(1f)) {
                         Text(
                             album.name,
@@ -189,7 +197,7 @@ fun ReaderScreen(
                     }
                     IconButton(onClick = {
                         showOptions = true
-                    }) { Icon(Icons.Outlined.AutoStories, "表示設定") }
+                    }) { Icon(Icons.Outlined.AutoStories, stringResource(R.string.reader_options)) }
                 }
             }
         }
@@ -353,12 +361,20 @@ private fun ChapterEnd(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("おわり", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+        Text(
+            stringResource(R.string.reader_end),
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White
+        )
         chapter.next?.let { next ->
             FilledTonalButton(onClick = { onOpenAlbum(next) }) {
                 Icon(Icons.Filled.SkipNext, null)
                 Spacer(Modifier.width(8.dp))
-                Text("次: ${next.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    stringResource(R.string.reader_next, next.name),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
         chapter.previous?.let { previous ->
@@ -366,7 +382,7 @@ private fun ChapterEnd(
                 Icon(Icons.Filled.SkipPrevious, null, tint = Color.White)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "前: ${previous.name}",
+                    stringResource(R.string.reader_previous, previous.name),
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -441,7 +457,12 @@ private fun ReaderBottomBar(
                 val previous = if (rtl) chapter.next else chapter.previous
                 val next = if (rtl) chapter.previous else chapter.next
                 IconButton(onClick = { previous?.let(onOpenAlbum) }, enabled = previous != null) {
-                    Icon(Icons.Filled.SkipPrevious, if (rtl) "次の話" else "前の話")
+                    Icon(
+                        Icons.Filled.SkipPrevious,
+                        stringResource(
+                            if (rtl) R.string.next_episode else R.string.previous_episode
+                        )
+                    )
                 }
                 // The slider runs the way the pages turn.
                 CompositionLocalProvider(
@@ -465,7 +486,12 @@ private fun ReaderBottomBar(
                     )
                 }
                 IconButton(onClick = { next?.let(onOpenAlbum) }, enabled = next != null) {
-                    Icon(Icons.Filled.SkipNext, if (rtl) "前の話" else "次の話")
+                    Icon(
+                        Icons.Filled.SkipNext,
+                        stringResource(
+                            if (rtl) R.string.previous_episode else R.string.next_episode
+                        )
+                    )
                 }
             }
             Text(
@@ -484,7 +510,10 @@ private fun ReaderOptions(settings: AppSettings, onChange: ((AppSettings) -> App
         Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("読み方", style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.reading_direction),
+            style = MaterialTheme.typography.titleSmall
+        )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             val options = ReadingDirection.entries
             options.forEachIndexed { index, direction ->
@@ -492,10 +521,10 @@ private fun ReaderOptions(settings: AppSettings, onChange: ((AppSettings) -> App
                     selected = settings.readingDirection == direction,
                     onClick = { onChange { it.copy(readingDirection = direction) } },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size)
-                ) { Text(direction.label, maxLines = 1) }
+                ) { Text(stringResource(direction.label), maxLines = 1) }
             }
         }
-        Text("ページ", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.pages_per_screen), style = MaterialTheme.typography.titleSmall)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             val options = SpreadMode.entries
             options.forEachIndexed { index, mode ->
@@ -503,12 +532,12 @@ private fun ReaderOptions(settings: AppSettings, onChange: ((AppSettings) -> App
                     selected = settings.spreadMode == mode,
                     onClick = { onChange { it.copy(spreadMode = mode) } },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size)
-                ) { Text(mode.label.substringBefore(" "), maxLines = 1) }
+                ) { Text(stringResource(mode.shortLabel), maxLines = 1) }
             }
         }
         ListItem(
-            headlineContent = { Text("表紙を単独で表示") },
-            supportingContent = { Text("見開きで 1 ページ目だけを単独にして、左右の組み合わせをずらします") },
+            headlineContent = { Text(stringResource(R.string.cover_alone)) },
+            supportingContent = { Text(stringResource(R.string.cover_alone_reader_desc)) },
             trailingContent = {
                 Switch(checked = settings.coverAlone, onCheckedChange = { value ->
                     onChange { it.copy(coverAlone = value) }

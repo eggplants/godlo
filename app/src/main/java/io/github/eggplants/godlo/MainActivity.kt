@@ -2,23 +2,24 @@ package io.github.eggplants.godlo
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.ui.GodloRoot
 import io.github.eggplants.godlo.ui.theme.GodloTheme
 
-class MainActivity : ComponentActivity() {
+/** An AppCompatActivity so that AppCompat can apply the per-app language on Android 12 and older. */
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handle(intent)
-        container.music.connect()
+        container.audio.connect()
         setContent {
-            val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
+            val settings by container.settings.state.collectAsStateWithLifecycle()
             GodloTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
                 GodloRoot(container)
             }

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_label">Godlo で保存</string>
+
+    <!-- 通知 -->
+    <string name="downloading">ダウンロード中</string>
+    <string name="download_done">ダウンロード完了</string>
+    <string name="download_failed">ダウンロード失敗</string>
+    <string name="channel_progress">ダウンロードの進行状況</string>
+    <string name="channel_result">ダウンロードの結果</string>
+
+    <!-- ナビゲーション -->
+    <string name="nav_downloads">ダウンロード</string>
+    <string name="nav_images">画像</string>
+    <string name="nav_audio">音声</string>
+    <string name="nav_videos">動画</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- 保存する種類 -->
+    <string name="kind_image">画像</string>
+    <string name="kind_audio">音声</string>
+    <string name="kind_video">動画</string>
+
+    <!-- 共通 -->
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    <string name="delete">削除</string>
+    <string name="save">保存</string>
+    <string name="close">閉じる</string>
+    <string name="back">戻る</string>
+    <string name="search">検索</string>
+    <string name="all">すべて</string>
+    <string name="delete_title">削除しますか？</string>
+    <string name="delete_body">「%1$s」を端末から削除します。元に戻せません。</string>
+    <string name="layout_button">表示形式: %1$s</string>
+    <string name="layout_selected">選択中</string>
+    <string name="layout_list">リスト</string>
+    <string name="layout_large_grid">大きいグリッド</string>
+    <string name="layout_small_grid">小さいグリッド</string>
+
+    <!-- ダウンロード画面 -->
+    <string name="clear_history">履歴を削除</string>
+    <string name="clear_history_title">履歴を削除しますか？</string>
+    <plurals name="clear_history_body">
+        <item quantity="other">完了・失敗・キャンセルした %1$d 件の履歴を消します。ダウンロード中・待機中のものと、保存したファイルはそのまま残ります。</item>
+    </plurals>
+    <string name="queue_and_history">キュー・履歴</string>
+    <string name="storage_access_title">ストレージへのアクセスが必要です</string>
+    <string name="storage_access_body">Download/Godlo に保存するため、「すべてのファイルへのアクセス」を許可してください。</string>
+    <string name="grant">許可する</string>
+    <string name="paste">貼り付け</string>
+    <string name="clear">クリア</string>
+    <string name="tool">ツール</string>
+    <string name="format">形式</string>
+    <string name="quality">画質</string>
+    <string name="quality_best">最高</string>
+    <string name="whole_playlist">プレイリスト全体</string>
+    <string name="following_episodes">続きの話もまとめて</string>
+    <string name="download">ダウンロード</string>
+    <string name="retry">再試行</string>
+    <string name="open">開く</string>
+    <string name="remove_from_history">履歴から削除</string>
+    <string name="state_queued">待機中</string>
+    <string name="state_running">ダウンロード中</string>
+    <string name="state_done">完了</string>
+    <string name="state_done_count">完了 (%1$d)</string>
+    <string name="state_failed">失敗</string>
+    <string name="state_cancelled">キャンセル</string>
+
+    <!-- ライブラリ -->
+    <string name="up_one_level">上の階層へ</string>
+    <string name="image_search_hint">サイト・タイトル・話で検索</string>
+    <string name="not_found_title">見つかりません</string>
+    <string name="not_found_body">「%1$s」を含むものはありません。</string>
+    <string name="images_empty_title">画像はまだありません</string>
+    <string name="images_empty_body">gallery-dl や getjmanga で保存した画像・漫画がここに並びます。</string>
+    <string name="audio_empty_title">音声はまだありません</string>
+    <string name="audio_empty_body">ダウンロード画面で「音声」を選ぶと、音声だけを保存できます。</string>
+    <string name="videos_empty_title">動画はまだありません</string>
+    <string name="videos_empty_body">yt-dlp で保存した動画がここに並びます。</string>
+    <plurals name="entries">
+        <item quantity="other">%d 件</item>
+    </plurals>
+    <plurals name="pages">
+        <item quantity="other">%d 枚</item>
+    </plurals>
+
+    <!-- 音声プレイヤー -->
+    <string name="play">再生</string>
+    <string name="pause">一時停止</string>
+    <string name="next">次へ</string>
+    <string name="previous">前へ</string>
+    <string name="stop">停止</string>
+    <string name="now_playing">再生中</string>
+    <string name="shuffle">シャッフル</string>
+    <string name="shuffle_play">シャッフル再生</string>
+    <string name="repeat">リピート</string>
+
+    <!-- ビューア -->
+    <string name="reader_no_images">画像がありません</string>
+    <string name="reader_options">表示設定</string>
+    <string name="reader_end">おわり</string>
+    <string name="reader_next">次: %1$s</string>
+    <string name="reader_previous">前: %1$s</string>
+    <string name="next_episode">次の話</string>
+    <string name="previous_episode">前の話</string>
+    <string name="reading_direction">読む方向</string>
+    <string name="pages_per_screen">ページ</string>
+    <string name="cover_alone">表紙を単独で表示</string>
+    <string name="cover_alone_desc">見開きで 1 ページ目だけを単独にします</string>
+    <string name="cover_alone_reader_desc">見開きで 1 ページ目だけを単独にして、左右の組み合わせをずらします</string>
+    <string name="direction_rtl">右→左 (漫画)</string>
+    <string name="direction_ltr">左→右</string>
+    <string name="direction_vertical">縦スクロール</string>
+    <string name="spread_auto">自動 (横向きで見開き)</string>
+    <string name="spread_auto_short">自動</string>
+    <string name="spread_single">単ページ</string>
+    <string name="spread_spread">見開き</string>
+
+    <!-- 設定 -->
+    <string name="settings_save_location">保存先</string>
+    <string name="settings_root_summary">%1$s/{サイト}/</string>
+    <string name="settings_config_title">ツールの設定ファイル</string>
+    <string name="settings_config_body">%1$s/ に gallery-dl.conf・getjmanga.toml・cookies.txt (Netscape 形式) を置くと読み込みます</string>
+    <string name="settings_downloads">ダウンロード</string>
+    <string name="settings_video_quality">動画の画質</string>
+    <string name="settings_audio_format">音声の形式</string>
+    <string name="settings_manga_format">漫画ページの形式 (getjmanga)</string>
+    <string name="settings_cbz">CBZ も作成 (getjmanga)</string>
+    <string name="settings_cbz_desc">各話を _cbz/ に .cbz でもまとめます</string>
+    <string name="settings_viewer">ビューア</string>
+    <string name="settings_spread">見開き</string>
+    <string name="settings_appearance">外観</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_system">端末の設定に従う</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="theme_system">システム</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+    <string name="settings_dynamic_color">ダイナミックカラー</string>
+    <string name="settings_dynamic_color_desc">壁紙の色を使います (オフで #F5F6F6 のテーマ)</string>
+    <string name="settings_tools">ツール</string>
+    <string name="tools_starting_python">Python を起動中…</string>
+    <string name="tools_reset">同梱版に戻す</string>
+    <string name="tools_reset_done">同梱版に戻しました。アプリを再起動すると反映されます。</string>
+    <string name="tools_update">最新版に更新</string>
+    <string name="tools_updated">更新しました。アプリを再起動すると反映されます。</string>
+    <string name="tools_update_failed">更新に失敗しました。</string>
+    <string name="tools_update_title">ツールの更新</string>
+    <string name="root_dialog_title">%1$s の保存先</string>
+    <string name="root_dialog_hint">この下に {サイト}/ を作って保存します</string>
+    <string name="reset_default">既定に戻す</string>
+
+    <!-- このアプリについて -->
+    <string name="settings_about">このアプリについて</string>
+    <string name="about_repository">リポジトリ</string>
+    <string name="about_version">バージョン</string>
+    <string name="about_donate">寄付</string>
+    <string name="about_donate_summary">GitHub Sponsors</string>
+    <string name="about_licenses">オープンソースライセンス</string>
+    <string name="about_licenses_android">Android のライブラリ</string>
+    <string name="about_licenses_python">その他のライブラリ（Python ほか）</string>
+    <string name="open_website">Web ページを開く</string>
+</resources>

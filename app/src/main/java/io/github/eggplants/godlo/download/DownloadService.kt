@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import io.github.eggplants.godlo.GodloApp
 import io.github.eggplants.godlo.MainActivity
 import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.core.AppLanguage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -23,9 +24,13 @@ import kotlinx.coroutines.launch
 class DownloadService : LifecycleService() {
     private var job: Job? = null
 
+    /** This service in the chosen UI language, which AppCompat only applies to activities. */
+    private var strings: Context = this
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        createChannels(this)
+        strings = AppLanguage.localize(this)
+        createChannels(strings)
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -88,7 +93,7 @@ class DownloadService : LifecycleService() {
             .setContentTitle(
                 task?.title?.ifBlank {
                     null
-                } ?: task?.url ?: getString(R.string.downloading)
+                } ?: task?.url ?: strings.getString(R.string.downloading)
             )
             .setContentText(task?.detail)
             .setOngoing(true)
@@ -118,7 +123,7 @@ class DownloadService : LifecycleService() {
                 }
             )
             .setContentTitle(
-                getString(
+                strings.getString(
                     if (task.state ==
                         TaskState.DONE
                     ) {

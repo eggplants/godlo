@@ -9,28 +9,36 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
+import io.github.eggplants.godlo.R
 import java.io.File
 
-/** What a download is saved as, and the directory under the save root it goes in. */
-enum class MediaKind(val dir: String, val label: String) {
-    IMAGE("image", "画像"),
-    AUDIO("audio", "音楽"),
-    VIDEO("video", "動画")
+/** What a download is saved as, by the name `godlo_bridge.py` knows it by. */
+enum class MediaKind(val id: String, @StringRes val label: Int) {
+    IMAGE("image", R.string.kind_image),
+    AUDIO("audio", R.string.kind_audio),
+    VIDEO("video", R.string.kind_video)
     ;
 
     companion object {
-        fun fromDir(dir: String): MediaKind = entries.firstOrNull { it.dir == dir } ?: VIDEO
+        fun fromId(id: String): MediaKind = entries.firstOrNull { it.id == id } ?: VIDEO
     }
 }
 
 object Storage {
-    /** `/storage/emulated/0/Download/Godlo`: `<root>/<kind>/<site>/` holds everything saved. */
-    val defaultRoot: String
+    /** `/storage/emulated/0/Download/Godlo`, under which each tool gets its own directory. */
+    val base: File
         get() = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "Godlo"
-        ).absolutePath
+        )
+
+    /** Where [engine] saves by default: `Download/Godlo/<tool>`, holding `<site>/` directories. */
+    fun defaultRoot(engine: Engine): String = File(base, engine.id).absolutePath
+
+    /** Holds the tools' own config files and cookies.txt, whatever the save directories are. */
+    val configDir: File get() = File(base, ".config")
 
     /**
      * Whether the app may write anywhere on shared storage.

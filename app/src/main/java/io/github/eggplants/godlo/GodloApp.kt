@@ -2,6 +2,7 @@ package io.github.eggplants.godlo
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -12,7 +13,7 @@ import io.github.eggplants.godlo.core.SettingsRepository
 import io.github.eggplants.godlo.download.DownloadManager
 import io.github.eggplants.godlo.library.AudioArtFetcher
 import io.github.eggplants.godlo.library.LibraryRepository
-import io.github.eggplants.godlo.player.MusicPlayer
+import io.github.eggplants.godlo.player.AudioPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +25,7 @@ class AppContainer(context: Context) {
     val python = PythonBridge(context)
     val downloads = DownloadManager(context, python, settings)
     val library = LibraryRepository(settings)
-    val music = MusicPlayer(context)
+    val audio = AudioPlayer(context)
 
     /** A URL shared into the app, waiting for the download screen to pick it up. */
     val sharedUrl = MutableStateFlow<String?>(null)
@@ -43,7 +44,10 @@ class GodloApp :
         container = AppContainer(this)
         scope.launch { container.downloads.completed.collect { container.library.refresh() } }
         // Starting Python takes a few seconds; do it before the first download asks for it.
-        scope.launch(Dispatchers.IO) { runCatching { container.python.versions() } }
+        scope.launch(Dispatchers.IO) {
+            runCatching { container.python.versions() }
+                .onFailure { Log.e("Godlo", "Python failed to start", it) }
+        }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =
