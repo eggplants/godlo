@@ -26,16 +26,36 @@ class Binaries(val ffmpeg: File?, val ffmpegLibDir: File?, val qjs: File?) {
             val libDir = File(libRoot, "usr/lib")
             if (zip.exists() && pythonZip.exists()) {
                 val stamp = File(libRoot, ".stamp")
-                val want = "${zip.length()}:${zip.lastModified()}:${pythonZip.length()}"
+                // Unpacked again whenever the app is installed or updated.
+                val want = context.packageManager
+                    .getPackageInfo(context.packageName, 0).lastUpdateTime.toString()
                 if (!stamp.exists() || stamp.readText() != want) {
                     libRoot.deleteRecursively()
-                    unzip(zip, libRoot) { true }
+                    unzip(zip, libRoot) { it !in WEBP }
                     unzip(pythonZip, libRoot) { it in FROM_PYTHON }
+                    for (stub in listOf("libwebp.so", "libwebpmux.so")) {
+                        Os.symlink(
+                            File(nativeDir, stub).absolutePath,
+                            File(libDir, stub).absolutePath
+                        )
+                    }
                     stamp.writeText(want)
                 }
             }
             return Binaries(ffmpeg, libDir.takeIf { it.isDirectory }, qjs)
         }
+
+        /**
+         * libwebp as `libffmpeg.zip.so` ships it: aligned to 4 KB pages, which 16 KB page
+         * devices refuse to load. Stubs in jniLibs (see native/webp-stub) stand in for it.
+         */
+        private val WEBP = setOf(
+            "usr/lib/libsharpyuv.so",
+            "usr/lib/libwebp.so",
+            "usr/lib/libwebpdecoder.so",
+            "usr/lib/libwebpdemux.so",
+            "usr/lib/libwebpmux.so"
+        )
 
         /** What ffmpeg links against that `libffmpeg.zip.so` leaves out. */
         private val FROM_PYTHON = setOf(
