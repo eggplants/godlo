@@ -1,0 +1,53 @@
+[tools]
+"aqua:azu/dockerfile-pin" = "latest"
+claude = "latest"
+java = "temurin-21"
+# Chaquopy builds the app's Python packages with the same Python minor version it ships.
+python = "3.13"
+ktlint = "latest"
+pinact = "latest"
+usage = "latest"
+
+[tasks.build]
+description = "Assemble the debug APK"
+run = "./gradlew assembleDebug"
+
+[tasks.test]
+description = "Run JVM unit tests"
+run = "./gradlew test"
+
+[tasks.format]
+description = "Format Kotlin sources with ktlint"
+alias = "fmt"
+run = "ktlint --format --relative --log-level=warn"
+
+[tasks."lint:kt"]
+description = "Lint Kotlin sources with ktlint"
+run = "ktlint --relative --log-level=warn"
+
+[tasks."lint:android"]
+description = "Run Android Lint"
+run = "./gradlew lint"
+
+[tasks.lint]
+description = "Run every linter"
+depends = ["lint:kt", "lint:android"]
+
+[tasks.pin]
+description = "Pin GitHub Actions to full commit SHAs"
+run = "pinact run"
+
+[tasks."pin:check"]
+description = "Verify GitHub Actions are pinned to full commit SHAs"
+run = "pinact run --check --verify-comment"
+
+[tasks.pre-commit]
+description = "Run checks on pre-commit"
+depends = ["format", "pin"]
+
+# The Gradle tasks run in a single invocation: mise resolves `depends` in
+# parallel, and concurrent `./gradlew` runs would contend for the build lock.
+[tasks.ci]
+description = "Run CI checks"
+depends = ["lint:kt", "pin:check"]
+run = "./gradlew lint test assembleDebug"

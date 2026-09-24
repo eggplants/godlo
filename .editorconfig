@@ -1,0 +1,21 @@
+# Shared by Android Studio / IntelliJ, ktlint and Android Lint.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{xml,yml,yaml,json,toml}]
+indent_size = 2
+
+[*.{kt,kts}]
+# Android Kotlin style guide: the same rules Android Studio's formatter and
+# Android Lint assume, so ktlint never asks for code that Lint rejects.
+ktlint_code_style = android_studio
+max_line_length = 100
+# Composables are named like types.
+ktlint_function_naming_ignore_when_annotated_with = Composable
