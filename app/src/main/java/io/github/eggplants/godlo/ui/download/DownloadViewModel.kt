@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.MediaKind
+import java.text.Normalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,13 @@ data class DownloadForm(
     val videoQuality: String = "1080",
     val audioFormat: String = "mp3"
 ) {
-    val valid: Boolean get() = url.trim().startsWith("http") && engine != null
+    /**
+     * The URL as the tools get it: trimmed, and with the full-width letters a Japanese keyboard
+     * may slip in ("ｗ" for "w") made ASCII.
+     */
+    val cleanUrl: String get() = cleanUrl(url)
+
+    val valid: Boolean get() = cleanUrl.startsWith("http") && engine != null
 }
 
 @OptIn(FlowPreview::class)
@@ -48,7 +55,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch {
-            _form.map { it.url.trim() }.distinctUntilChanged().debounce(400).collect { url ->
+            _form.map { it.cleanUrl }.distinctUntilChanged().debounce(400).collect { url ->
                 if (url.startsWith("http")) detect(url)
             }
         }
@@ -63,9 +70,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun setUrl(url: String) = _form.update {
-        if (it.url.trim() ==
-            url.trim()
-        ) {
+        if (it.cleanUrl == cleanUrl(url)) {
             it.copy(url = url)
         } else {
             it.copy(url = url, manual = false, engine = null, site = "")
@@ -81,7 +86,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                     .getOrNull()
             }
         _form.update { form ->
-            if (form.url.trim() != url) return@update form
+            if (form.cleanUrl != url) return@update form
             if (found ==
                 null
             ) {
@@ -136,7 +141,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
         val form = _form.value
         val engine = form.engine ?: return
         container.downloads.enqueue(
-            url = form.url,
+            url = form.cleanUrl,
             engine = engine,
             kind = form.kind,
             site = form.site,
@@ -157,3 +162,5 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
 
     fun clearFinished() = container.downloads.clearFinished()
 }
+
+private fun cleanUrl(url: String): String = Normalizer.normalize(url, Normalizer.Form.NFKC).trim()
