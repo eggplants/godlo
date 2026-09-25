@@ -167,6 +167,7 @@
     <!-- このアプリについて -->
     <string name="settings_about">このアプリについて</string>
     <string name="about_repository">リポジトリ</string>
+    <string name="about_license">ライセンス</string>
     <string name="about_version">バージョン</string>
     <string name="about_donate">寄付</string>
     <string name="about_donate_summary">GitHub Sponsors</string>

@@ -412,6 +412,7 @@ private fun Section(title: String, icon: ImageVector, content: @Composable () ->
 }
 
 private const val REPOSITORY = "https://github.com/eggplants/godlo"
+private const val LICENSE = "$REPOSITORY/blob/master/LICENSE"
 private const val SPONSORS = "https://github.com/sponsors/eggplants"
 
 @Composable
@@ -427,6 +428,11 @@ private fun AboutSection(onOpenAndroidLicenses: () -> Unit, onOpenPythonLicenses
             title = stringResource(R.string.about_repository),
             summary = REPOSITORY.removePrefix("https://"),
             onClick = { uriHandler.openUri(REPOSITORY) }
+        )
+        SettingItem(
+            title = stringResource(R.string.about_license),
+            summary = "MIT License",
+            onClick = { uriHandler.openUri(LICENSE) }
         )
         SettingItem(title = stringResource(R.string.about_version), summary = version)
         SettingItem(

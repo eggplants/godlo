@@ -172,6 +172,7 @@
     <!-- About -->
     <string name="settings_about">About</string>
     <string name="about_repository">Source code</string>
+    <string name="about_license">License</string>
     <string name="about_version">Version</string>
     <string name="about_donate">Donate</string>
     <string name="about_donate_summary">GitHub Sponsors</string>
