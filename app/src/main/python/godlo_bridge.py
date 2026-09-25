@@ -526,7 +526,10 @@ def _run_getjmanga(request: dict, callback: object) -> None:
             pass
 
     args = [url, "-d", str(root), "-F", request.get("image_format") or "jpg"]
-    args.append("--bulk" if request.get("playlist") else "--no-bulk")
+    if request.get("previous"):
+        args.append("--both")  # the previous episodes as well as the next ones
+    else:
+        args.append("--bulk" if request.get("playlist") else "--no-bulk")
     if request.get("cbz"):
         args.append("--cbz")
     parsed = cli.parse_args(args)

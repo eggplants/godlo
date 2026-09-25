@@ -43,6 +43,8 @@ data class DownloadTask(
     val playlist: Boolean,
     val videoQuality: String,
     val audioFormat: String,
+    /** getjmanga: the previous episodes too, besides the next ones. */
+    val previous: Boolean = false,
     val state: TaskState = TaskState.QUEUED,
     val title: String = "",
     /** 0..1, or negative while the total is unknown. */
@@ -88,7 +90,8 @@ class DownloadManager(
         site: String,
         playlist: Boolean,
         videoQuality: String,
-        audioFormat: String
+        audioFormat: String,
+        previous: Boolean = false
     ) {
         val task = DownloadTask(
             id = System.nanoTime(),
@@ -98,7 +101,8 @@ class DownloadManager(
             site = site,
             playlist = playlist,
             videoQuality = videoQuality,
-            audioFormat = audioFormat
+            audioFormat = audioFormat,
+            previous = previous
         )
         _tasks.update { listOf(task) + it }
         persist()
@@ -166,6 +170,7 @@ class DownloadManager(
             kind = task.kind.id,
             root = root,
             playlist = task.playlist,
+            previous = task.previous,
             videoQuality = task.videoQuality,
             audioFormat = task.audioFormat,
             imageFormat = settings.imageFormat,

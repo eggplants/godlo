@@ -59,6 +59,7 @@
     <string name="quality_best">Best</string>
     <string name="whole_playlist">Whole playlist</string>
     <string name="following_episodes">Following episodes too</string>
+    <string name="previous_episodes">Previous episodes too</string>
     <string name="download">Download</string>
     <string name="retry">Retry</string>
     <string name="open">Open</string>

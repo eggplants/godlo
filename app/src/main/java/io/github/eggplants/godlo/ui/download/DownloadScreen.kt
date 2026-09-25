@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Warning
@@ -473,6 +474,20 @@ private fun DownloadFormCard(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
                     ),
                     modifier = Modifier.padding(horizontal = 0.dp)
+                )
+            }
+            if (form.engine == Engine.GETJMANGA) {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.previous_episodes)) },
+                    leadingContent = {
+                        Icon(Icons.Filled.SwapVert, contentDescription = null)
+                    },
+                    trailingContent = {
+                        Switch(checked = form.previous, onCheckedChange = vm::setPrevious)
+                    },
+                    colors = androidx.compose.material3.ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                    )
                 )
             }
 

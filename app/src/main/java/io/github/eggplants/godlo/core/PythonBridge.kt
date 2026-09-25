@@ -38,6 +38,8 @@ data class DownloadRequest(
     val root: String,
     /** yt-dlp: the whole playlist. getjmanga: every next episode too. */
     val playlist: Boolean = false,
+    /** getjmanga: every previous episode as well as the next ones (`--both`). */
+    val previous: Boolean = false,
     @SerialName("video_quality") val videoQuality: String = "1080",
     @SerialName("audio_format") val audioFormat: String = "mp3",
     @SerialName("image_format") val imageFormat: String = "jpg",
