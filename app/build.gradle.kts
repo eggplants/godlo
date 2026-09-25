@@ -69,8 +69,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
+            // R8 shrinks and obfuscates; see src/main/keepRules for what Python calls by name.
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
