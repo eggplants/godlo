@@ -24,8 +24,8 @@ enum class ThemeMode(@StringRes val label: Int) {
 }
 
 /** Which way pages turn. */
-enum class ReadingDirection(@StringRes val label: Int) {
-    RTL(R.string.direction_rtl),
+enum class ReadingDirection(@StringRes val label: Int, @StringRes val shortLabel: Int = label) {
+    RTL(R.string.direction_rtl, R.string.direction_rtl_short),
     LTR(R.string.direction_ltr),
     VERTICAL(R.string.direction_vertical)
 }

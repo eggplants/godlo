@@ -128,6 +128,7 @@
     <string name="cover_alone_desc">In spreads, show only page 1 on its own</string>
     <string name="cover_alone_reader_desc">In spreads, show page 1 alone to shift how the pages pair up</string>
     <string name="direction_rtl">Right to left (manga)</string>
+    <string name="direction_rtl_short">Right to left</string>
     <string name="direction_ltr">Left to right</string>
     <string name="direction_vertical">Vertical scroll</string>
     <string name="spread_auto">Auto (spreads in landscape)</string>

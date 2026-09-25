@@ -538,7 +538,13 @@ private fun ReaderOptions(settings: AppSettings, onChange: ((AppSettings) -> App
                     selected = settings.readingDirection == direction,
                     onClick = { onChange { it.copy(readingDirection = direction) } },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size)
-                ) { Text(stringResource(direction.label), maxLines = 1) }
+                ) {
+                    Text(
+                        stringResource(direction.shortLabel),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
         Text(stringResource(R.string.pages_per_screen), style = MaterialTheme.typography.titleSmall)

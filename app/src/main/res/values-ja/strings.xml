@@ -122,6 +122,7 @@
     <string name="cover_alone_desc">見開きで 1 ページ目だけを単独にします</string>
     <string name="cover_alone_reader_desc">見開きで 1 ページ目だけを単独にして、左右の組み合わせをずらします</string>
     <string name="direction_rtl">右→左 (漫画)</string>
+    <string name="direction_rtl_short">右→左</string>
     <string name="direction_ltr">左→右</string>
     <string name="direction_vertical">縦スクロール</string>
     <string name="spread_auto">自動 (横向きで見開き)</string>
