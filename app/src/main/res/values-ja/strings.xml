@@ -116,11 +116,11 @@
     <string name="cover_alone">表紙を単独で表示</string>
     <string name="cover_alone_desc">見開きで 1 ページ目だけを単独にします</string>
     <string name="cover_alone_reader_desc">見開きで 1 ページ目だけを単独にして、左右の組み合わせをずらします</string>
-    <string name="direction_rtl">右→左 (漫画)</string>
+    <string name="direction_rtl">右→左</string>
     <string name="direction_rtl_short">右→左</string>
     <string name="direction_ltr">左→右</string>
     <string name="direction_vertical">縦スクロール</string>
-    <string name="spread_auto">自動 (横向きで見開き)</string>
+    <string name="spread_auto">自動</string>
     <string name="spread_auto_short">自動</string>
     <string name="spread_single">単ページ</string>
     <string name="spread_spread">見開き</string>
@@ -133,12 +133,12 @@
     <string name="settings_downloads">ダウンロード</string>
     <string name="settings_video_quality">動画の画質</string>
     <string name="settings_audio_format">音声の形式</string>
-    <string name="settings_manga_format">漫画ページの形式 (getjmanga)</string>
-    <string name="settings_episodes">ダウンロードする話 (getjmanga)</string>
-    <string name="episodes_one">リンクの話だけ</string>
-    <string name="episodes_following">その話と続きの話</string>
-    <string name="episodes_all">作品全体 (前の話も)</string>
-    <string name="settings_cbz">CBZ も作成 (getjmanga)</string>
+    <string name="settings_manga_format">[getjmanga] 漫画ページの形式</string>
+    <string name="settings_episodes">[getjmanga] ダウンロードする話</string>
+    <string name="episodes_one">指定した話のみ</string>
+    <string name="episodes_following">指定した話と後続話</string>
+    <string name="episodes_all">過去話含む作品全体</string>
+    <string name="settings_cbz">[getjmanga] CBZ も作成</string>
     <string name="settings_cbz_desc">各話を _cbz/ に .cbz でもまとめます</string>
     <string name="settings_viewer">ビューア</string>
     <string name="settings_spread">見開き</string>
@@ -167,14 +167,14 @@
     <string name="reset_default">既定に戻す</string>
 
     <!-- ツールの設定ファイル -->
-    <string name="config_ytdlp_summary">yt-dlp のオプション (コマンドラインと同じ書き方)</string>
-    <string name="config_gallery_dl_summary">gallery-dl の設定 (JSON)</string>
-    <string name="config_getjmanga_summary">getjmanga のアカウント・既定値・巡回 (TOML)</string>
-    <string name="config_cookies_summary">yt-dlp と gallery-dl の Cookie (Netscape 形式)</string>
+    <string name="config_ytdlp_summary">yt-dlp の設定ファイル</string>
+    <string name="config_gallery_dl_summary">gallery-dl の設定ファイル</string>
+    <string name="config_getjmanga_summary">getjmanga の設定ファイル</string>
+    <string name="config_cookies_summary">yt-dlp と gallery-dl から参照される Cookie ファイル</string>
     <string name="config_ytdlp_hint">--embed-subs など、yt-dlp のコマンドラインと同じ書き方のオプションです。# で始まる行はコメントです。アプリの既定値やダウンロード画面の指定より優先されますが、保存先は変わりません。</string>
     <string name="config_gallery_dl_hint">gallery-dl 自体の設定です。保存先はアプリが指定します。</string>
-    <string name="config_getjmanga_hint">[site.\"…\"] にアカウント、patrol に巡回する作品を書きます。保存先・画像形式・CBZ・続きの話をたどるかは Godlo の設定で決まります。PC の getjmanga も同じファイルを読みます。</string>
-    <string name="config_cookies_hint">ブラウザ拡張機能で書き出せる Netscape 形式です。yt-dlp と gallery-dl が送ります。</string>
+    <string name="config_getjmanga_hint">[site.\"…\"] にアカウント、patrol に巡回する作品を記述できます。</string>
+    <string name="config_cookies_hint">ブラウザ拡張機能で書き出せる Netscape 形式です。yt-dlp と gallery-dl から参照されます。</string>
     <string name="config_visual">ビジュアル</string>
     <string name="config_text">テキスト</string>
     <string name="config_text_empty">空です</string>
@@ -198,8 +198,8 @@
     <string name="config_invalid_title">ツールが読めない可能性があります</string>
     <string name="config_invalid_body">このまま保存しますか?</string>
     <string name="config_save_anyway">保存する</string>
-    <string name="config_conflict_title">ほかで変更されています</string>
-    <string name="config_conflict_body">%1$s は、ここで開いた後にダウンロードなどで書き換えられました。この内容で上書きしますか? 読み直すと、ここでの変更は失われます。</string>
+    <string name="config_conflict_title">他アプリで変更されています</string>
+    <string name="config_conflict_body">%1$s は書き換えられました。この内容で上書きしますか? 読み直すと、ここでの変更は失われます。</string>
     <string name="config_overwrite">上書き</string>
     <string name="config_reload">読み直す</string>
     <string name="config_discard_title">変更を破棄しますか?</string>
@@ -224,7 +224,7 @@
     <string name="config_refused_title">Godlo では使えない設定</string>
     <string name="config_refused_body">ツールはこれらの設定なしで実行されます。削除してから保存しますか?</string>
     <string name="config_remove_and_save">削除して保存</string>
-    <string name="config_imported_removed">読み込みました。Godlo で使えない設定は除きました: %1$s。保存すると反映されます</string>
+    <string name="config_imported_removed">読み込みました。除去した設定: %1$s。保存すると反映されます</string>
     <string name="config_type_string">文字列</string>
     <string name="config_type_number">数値</string>
     <string name="config_type_boolean">オン/オフ</string>
@@ -241,6 +241,6 @@
     <string name="about_donate_summary">GitHub Sponsors</string>
     <string name="about_licenses">オープンソースライセンス</string>
     <string name="about_licenses_android">Android のライブラリ</string>
-    <string name="about_licenses_python">その他のライブラリ（Python ほか）</string>
+    <string name="about_licenses_python">その他のライブラリ</string>
     <string name="open_website">Web ページを開く</string>
 </resources>

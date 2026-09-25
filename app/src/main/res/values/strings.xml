@@ -121,11 +121,11 @@
     <string name="cover_alone">Show the cover alone</string>
     <string name="cover_alone_desc">In spreads, show only page 1 on its own</string>
     <string name="cover_alone_reader_desc">In spreads, show page 1 alone to shift how the pages pair up</string>
-    <string name="direction_rtl">Right to left (manga)</string>
+    <string name="direction_rtl">Right to left</string>
     <string name="direction_rtl_short">Right to left</string>
     <string name="direction_ltr">Left to right</string>
     <string name="direction_vertical">Vertical scroll</string>
-    <string name="spread_auto">Auto (spreads in landscape)</string>
+    <string name="spread_auto">Auto</string>
     <string name="spread_auto_short">Auto</string>
     <string name="spread_single">Single page</string>
     <string name="spread_spread">Spreads</string>
@@ -138,12 +138,12 @@
     <string name="settings_downloads">Downloads</string>
     <string name="settings_video_quality">Video quality</string>
     <string name="settings_audio_format">Audio format</string>
-    <string name="settings_manga_format">Manga page format (getjmanga)</string>
-    <string name="settings_episodes">Episodes to download (getjmanga)</string>
-    <string name="episodes_one">Only the linked one</string>
-    <string name="episodes_following">It and the following ones</string>
-    <string name="episodes_all">The whole work, previous ones too</string>
-    <string name="settings_cbz">Also make CBZ (getjmanga)</string>
+    <string name="settings_manga_format">[getjmanga] Manga page format</string>
+    <string name="settings_episodes">[getjmanga] Episodes to download</string>
+    <string name="episodes_one">Only the given episode</string>
+    <string name="episodes_following">The given episode and the ones after it</string>
+    <string name="episodes_all">The whole work, earlier episodes included</string>
+    <string name="settings_cbz">[getjmanga] Also make CBZ</string>
     <string name="settings_cbz_desc">Also pack each episode into _cbz/ as a .cbz</string>
     <string name="settings_viewer">Viewer</string>
     <string name="settings_spread">Spreads</string>
@@ -172,14 +172,14 @@
     <string name="reset_default">Reset to default</string>
 
     <!-- Tool config files -->
-    <string name="config_ytdlp_summary">yt-dlp options, as on its command line</string>
-    <string name="config_gallery_dl_summary">gallery-dl configuration (JSON)</string>
-    <string name="config_getjmanga_summary">getjmanga accounts, defaults and patrol (TOML)</string>
-    <string name="config_cookies_summary">Cookies for yt-dlp and gallery-dl (Netscape format)</string>
+    <string name="config_ytdlp_summary">yt-dlp configuration file</string>
+    <string name="config_gallery_dl_summary">gallery-dl configuration file</string>
+    <string name="config_getjmanga_summary">getjmanga configuration file</string>
+    <string name="config_cookies_summary">Cookie file read by yt-dlp and gallery-dl</string>
     <string name="config_ytdlp_hint">Options as on yt-dlp’s command line, such as --embed-subs; lines starting with # are comments. They win over the app’s defaults and the download form, but not over where files are saved.</string>
     <string name="config_gallery_dl_hint">gallery-dl’s own configuration. The app sets where files are saved.</string>
-    <string name="config_getjmanga_hint">Accounts under [site.\"…\"] and the works to patrol under patrol; where pages are saved, their format, CBZ and how far to follow episodes come from Godlo. getjmanga on a computer reads the same file.</string>
-    <string name="config_cookies_hint">Netscape format, as browser extensions export them. yt-dlp and gallery-dl send them.</string>
+    <string name="config_getjmanga_hint">You can write accounts under [site.\"…\"] and the works to patrol under patrol.</string>
+    <string name="config_cookies_hint">Netscape format, as browser extensions export them. yt-dlp and gallery-dl read this file.</string>
     <string name="config_visual">Visual</string>
     <string name="config_text">Text</string>
     <string name="config_text_empty">Empty</string>
@@ -203,8 +203,8 @@
     <string name="config_invalid_title">The tool may not read this</string>
     <string name="config_invalid_body">Save it anyway?</string>
     <string name="config_save_anyway">Save anyway</string>
-    <string name="config_conflict_title">Changed meanwhile</string>
-    <string name="config_conflict_body">%1$s was written after it was opened here, perhaps by a download. Overwrite it with this, or reload it and lose the changes here?</string>
+    <string name="config_conflict_title">Changed by another app</string>
+    <string name="config_conflict_body">%1$s was changed. Overwrite it with this? If you reload it, the changes here are lost.</string>
     <string name="config_overwrite">Overwrite</string>
     <string name="config_reload">Reload</string>
     <string name="config_discard_title">Discard the changes?</string>
@@ -229,7 +229,7 @@
     <string name="config_refused_title">Settings Godlo cannot use</string>
     <string name="config_refused_body">The tool would run without these. Remove them before saving?</string>
     <string name="config_remove_and_save">Remove and save</string>
-    <string name="config_imported_removed">Loaded, leaving out what Godlo cannot use: %1$s. Save to apply it.</string>
+    <string name="config_imported_removed">Loaded. Removed settings: %1$s. Save to apply it.</string>
     <string name="config_type_string">Text</string>
     <string name="config_type_number">Number</string>
     <string name="config_type_boolean">On/off</string>
@@ -246,6 +246,6 @@
     <string name="about_donate_summary">GitHub Sponsors</string>
     <string name="about_licenses">Open source licenses</string>
     <string name="about_licenses_android">Android libraries</string>
-    <string name="about_licenses_python">Other libraries (Python and more)</string>
+    <string name="about_licenses_python">Other libraries</string>
     <string name="open_website">Open website</string>
 </resources>
