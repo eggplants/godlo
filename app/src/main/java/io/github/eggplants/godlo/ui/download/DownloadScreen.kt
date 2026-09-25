@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.DeleteSweep
@@ -450,21 +449,9 @@ private fun DownloadFormCard(
                 }
             }
 
-            if (form.engine == Engine.YTDLP || form.engine == Engine.GETJMANGA) {
+            if (form.engine == Engine.YTDLP) {
                 ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(
-                                if (form.engine ==
-                                    Engine.YTDLP
-                                ) {
-                                    R.string.whole_playlist
-                                } else {
-                                    R.string.following_episodes
-                                }
-                            )
-                        )
-                    },
+                    headlineContent = { Text(stringResource(R.string.whole_playlist)) },
                     leadingContent = {
                         Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null)
                     },
@@ -478,18 +465,6 @@ private fun DownloadFormCard(
                 )
             }
             if (form.engine == Engine.GETJMANGA) {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.previous_episodes)) },
-                    leadingContent = {
-                        Icon(Icons.Filled.SwapVert, contentDescription = null)
-                    },
-                    trailingContent = {
-                        Switch(checked = form.previous, onCheckedChange = vm::setPrevious)
-                    },
-                    colors = androidx.compose.material3.ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    )
-                )
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.patrol_store)) },
                     leadingContent = {

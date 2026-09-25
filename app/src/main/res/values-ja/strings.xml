@@ -56,8 +56,6 @@
     <string name="quality">画質</string>
     <string name="quality_best">最高</string>
     <string name="whole_playlist">プレイリスト全体</string>
-    <string name="following_episodes">続きの話もまとめて</string>
-    <string name="previous_episodes">前の話もまとめて</string>
     <string name="patrol_title">新しい話の巡回</string>
     <string name="patrol_store">巡回リストに追加</string>
     <string name="patrol_run">今すぐ巡回</string>
@@ -136,6 +134,10 @@
     <string name="settings_video_quality">動画の画質</string>
     <string name="settings_audio_format">音声の形式</string>
     <string name="settings_manga_format">漫画ページの形式 (getjmanga)</string>
+    <string name="settings_episodes">ダウンロードする話 (getjmanga)</string>
+    <string name="episodes_one">リンクの話だけ</string>
+    <string name="episodes_following">その話と続きの話</string>
+    <string name="episodes_all">作品全体 (前の話も)</string>
     <string name="settings_cbz">CBZ も作成 (getjmanga)</string>
     <string name="settings_cbz_desc">各話を _cbz/ に .cbz でもまとめます</string>
     <string name="settings_viewer">ビューア</string>

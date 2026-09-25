@@ -67,6 +67,7 @@ import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.Engine
+import io.github.eggplants.godlo.core.EpisodeRange
 import io.github.eggplants.godlo.core.ReadingDirection
 import io.github.eggplants.godlo.core.SpreadMode
 import io.github.eggplants.godlo.core.Storage
@@ -145,6 +146,11 @@ fun SettingsScreen(
                     listOf("jpg" to "JPEG", "png" to "PNG", "webp" to "WebP"),
                     settings.imageFormat
                 ) { v -> update { it.copy(imageFormat = v) } }
+                ChoiceItem(
+                    stringResource(R.string.settings_episodes),
+                    EpisodeRange.entries.map { it.name to stringResource(it.label) },
+                    settings.episodes.name
+                ) { v -> update { it.copy(episodes = EpisodeRange.valueOf(v)) } }
                 SwitchItem(
                     stringResource(R.string.settings_cbz),
                     stringResource(R.string.settings_cbz_desc),

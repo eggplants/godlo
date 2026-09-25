@@ -37,6 +37,17 @@ enum class SpreadMode(@StringRes val label: Int, @StringRes val shortLabel: Int 
     SPREAD(R.string.spread_spread)
 }
 
+/** Which episodes a getjmanga download takes besides the one linked. */
+enum class EpisodeRange(@StringRes val label: Int) {
+    ONE(R.string.episodes_one),
+
+    /** `--bulk`. */
+    FOLLOWING(R.string.episodes_following),
+
+    /** `--both`: the previous episodes as well as the following ones. */
+    ALL(R.string.episodes_all)
+}
+
 /** How a library screen lays out what it lists. */
 enum class LibraryLayout(@StringRes val label: Int) {
     LIST(R.string.layout_list),
@@ -51,6 +62,7 @@ data class AppSettings(
     val audioFormat: String = "mp3",
     val imageFormat: String = "jpg",
     val cbz: Boolean = false,
+    val episodes: EpisodeRange = EpisodeRange.ONE,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
     val readingDirection: ReadingDirection = ReadingDirection.RTL,
@@ -73,6 +85,7 @@ class SettingsRepository(private val context: Context) {
         val audioFormat = stringPreferencesKey("audio_format")
         val imageFormat = stringPreferencesKey("image_format")
         val cbz = booleanPreferencesKey("cbz")
+        val episodes = stringPreferencesKey("getjmanga_episodes")
         val themeMode = stringPreferencesKey("theme_mode")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
         val readingDirection = stringPreferencesKey("reading_direction")
@@ -103,6 +116,7 @@ class SettingsRepository(private val context: Context) {
             audioFormat = this[Keys.audioFormat] ?: default.audioFormat,
             imageFormat = this[Keys.imageFormat] ?: default.imageFormat,
             cbz = this[Keys.cbz] ?: default.cbz,
+            episodes = enumOr(this[Keys.episodes], default.episodes),
             themeMode = enumOr(this[Keys.themeMode], default.themeMode),
             dynamicColor = this[Keys.dynamicColor] ?: default.dynamicColor,
             readingDirection = enumOr(this[Keys.readingDirection], default.readingDirection),
@@ -122,6 +136,7 @@ class SettingsRepository(private val context: Context) {
             prefs[Keys.audioFormat] = next.audioFormat
             prefs[Keys.imageFormat] = next.imageFormat
             prefs[Keys.cbz] = next.cbz
+            prefs[Keys.episodes] = next.episodes.name
             prefs[Keys.themeMode] = next.themeMode.name
             prefs[Keys.dynamicColor] = next.dynamicColor
             prefs[Keys.readingDirection] = next.readingDirection.name

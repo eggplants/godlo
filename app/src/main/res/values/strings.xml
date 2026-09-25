@@ -59,8 +59,6 @@
     <string name="quality">Quality</string>
     <string name="quality_best">Best</string>
     <string name="whole_playlist">Whole playlist</string>
-    <string name="following_episodes">Following episodes too</string>
-    <string name="previous_episodes">Previous episodes too</string>
     <string name="patrol_title">Patrol for new episodes</string>
     <string name="patrol_store">Add to the patrol</string>
     <string name="patrol_run">Patrol now</string>
@@ -141,6 +139,10 @@
     <string name="settings_video_quality">Video quality</string>
     <string name="settings_audio_format">Audio format</string>
     <string name="settings_manga_format">Manga page format (getjmanga)</string>
+    <string name="settings_episodes">Episodes to download (getjmanga)</string>
+    <string name="episodes_one">Only the linked one</string>
+    <string name="episodes_following">It and the following ones</string>
+    <string name="episodes_all">The whole work, previous ones too</string>
     <string name="settings_cbz">Also make CBZ (getjmanga)</string>
     <string name="settings_cbz_desc">Also pack each episode into _cbz/ as a .cbz</string>
     <string name="settings_viewer">Viewer</string>

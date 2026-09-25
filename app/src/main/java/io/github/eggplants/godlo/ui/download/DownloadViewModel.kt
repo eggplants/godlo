@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.core.Engine
+import io.github.eggplants.godlo.core.EpisodeRange
 import io.github.eggplants.godlo.core.MediaKind
 import java.text.Normalizer
 import kotlinx.coroutines.Dispatchers
@@ -29,9 +30,8 @@ data class DownloadForm(
     /** The user picked the engine or kind by hand, so detection leaves them alone. */
     val manual: Boolean = false,
     val detecting: Boolean = false,
+    /** yt-dlp: the whole playlist. getjmanga takes [AppSettings.episodes] instead. */
     val playlist: Boolean = false,
-    /** getjmanga: the previous episodes too; implies [playlist], as `--both` follows both ways. */
-    val previous: Boolean = false,
     /** getjmanga: store the work for the patrol to come back to for new episodes. */
     val store: Boolean = true,
     val videoQuality: String = "1080",
@@ -146,15 +146,9 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
         it.copy(kind = kind, engine = it.engineFor(kind), manual = true)
     }
 
-    fun setPlaylist(value: Boolean) = _form.update {
-        it.copy(playlist = value, previous = it.previous && value)
-    }
+    fun setPlaylist(value: Boolean) = _form.update { it.copy(playlist = value) }
 
     fun setStore(value: Boolean) = _form.update { it.copy(store = value) }
-
-    fun setPrevious(value: Boolean) = _form.update {
-        it.copy(previous = value, playlist = it.playlist || value)
-    }
 
     fun setVideoQuality(value: String) = _form.update { it.copy(videoQuality = value) }
 
@@ -163,16 +157,19 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
     fun submit() {
         val form = _form.value
         val engine = form.engine ?: return
+        val getjmanga = engine == Engine.GETJMANGA
+        // Settled as the task is queued, so that a retry takes the same episodes.
+        val episodes = container.settings.state.value.episodes
         container.downloads.enqueue(
             url = form.cleanUrl,
             engine = engine,
             kind = form.kind,
             site = form.site,
-            playlist = form.playlist,
+            playlist = if (getjmanga) episodes != EpisodeRange.ONE else form.playlist,
             videoQuality = form.videoQuality,
             audioFormat = form.audioFormat,
-            previous = form.previous && engine == Engine.GETJMANGA,
-            store = form.store && engine == Engine.GETJMANGA
+            previous = getjmanga && episodes == EpisodeRange.ALL,
+            store = form.store && getjmanga
         )
         _form.update {
             it.copy(
@@ -181,7 +178,6 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                 site = "",
                 manual = false,
                 playlist = false,
-                previous = false,
                 supported = null
             )
         }
