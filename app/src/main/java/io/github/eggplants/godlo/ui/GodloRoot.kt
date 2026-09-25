@@ -79,6 +79,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable object PatrolRoute
 
+/** The tabs, the libraries in the order the download screen offers the kinds of media. */
 private enum class TopLevel(
     val route: Any,
     @StringRes val label: Int,
@@ -91,9 +92,9 @@ private enum class TopLevel(
         Icons.Outlined.Download,
         Icons.Filled.Download
     ),
-    IMAGES(ImagesRoute(), R.string.nav_images, Icons.Outlined.Image, Icons.Filled.Image),
-    AUDIO(AudioRoute(), R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
     VIDEOS(VideosRoute(), R.string.nav_videos, Icons.Outlined.Movie, Icons.Filled.Movie),
+    AUDIO(AudioRoute(), R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
+    IMAGES(ImagesRoute(), R.string.nav_images, Icons.Outlined.Image, Icons.Filled.Image),
     SETTINGS(SettingsRoute, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
