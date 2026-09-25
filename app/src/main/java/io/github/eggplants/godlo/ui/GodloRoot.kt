@@ -60,9 +60,11 @@ import kotlinx.serialization.Serializable
 /** The image library, opened at [path] ("site/title/..."; empty for the sites). */
 @Serializable data class ImagesRoute(val path: String = "")
 
-@Serializable object AudioRoute
+/** The audio library, opened at [path], as [ImagesRoute]. */
+@Serializable data class AudioRoute(val path: String = "")
 
-@Serializable object VideosRoute
+/** The video library, opened at [path], as [ImagesRoute]. */
+@Serializable data class VideosRoute(val path: String = "")
 
 @Serializable object SettingsRoute
 
@@ -87,8 +89,8 @@ private enum class TopLevel(
         Icons.Filled.Download
     ),
     IMAGES(ImagesRoute(), R.string.nav_images, Icons.Outlined.Image, Icons.Filled.Image),
-    AUDIO(AudioRoute, R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
-    VIDEOS(VideosRoute, R.string.nav_videos, Icons.Outlined.Movie, Icons.Filled.Movie),
+    AUDIO(AudioRoute(), R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
+    VIDEOS(VideosRoute(), R.string.nav_videos, Icons.Outlined.Movie, Icons.Filled.Movie),
     SETTINGS(SettingsRoute, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
@@ -163,24 +165,30 @@ fun GodloRoot(container: AppContainer) {
                 NavHost(nav, startDestination = DownloadsRoute) {
                     composable<DownloadsRoute> {
                         DownloadScreen(container, onOpen = { target ->
+                            // The folder in the library tab first, so that backing out of the
+                            // viewer lands among the download's neighbours.
+                            val folder = target.folder.joinToString("/")
+                            val tab = when (target) {
+                                is DownloadTarget.Album, is DownloadTarget.ImageFolder ->
+                                    ImagesRoute(folder)
+
+                                is DownloadTarget.Video -> VideosRoute(folder)
+
+                                is DownloadTarget.Audio -> AudioRoute(folder)
+                            }
+                            nav.navigate(tab) {
+                                // Like picking the tab, but at the folder instead of where it was left.
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
                             when (target) {
-                                is DownloadTarget.Album -> nav.navigate(
-                                    ReaderRoute(target.dir.absolutePath)
-                                )
+                                is DownloadTarget.Album ->
+                                    nav.navigate(ReaderRoute(target.dir.absolutePath))
 
-                                is DownloadTarget.ImageFolder -> nav.navigate(
-                                    ImagesRoute(target.path.joinToString("/"))
-                                ) {
-                                    // Like picking the tab, but at the folder instead of where it was left.
-                                    popUpTo(nav.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                }
+                                is DownloadTarget.ImageFolder -> Unit
 
-                                is DownloadTarget.Video -> nav.navigate(
-                                    VideoRoute(target.file.absolutePath)
-                                )
+                                is DownloadTarget.Video ->
+                                    nav.navigate(VideoRoute(target.file.absolutePath))
 
                                 is DownloadTarget.Audio -> {
                                     container.audio.play(target.files, 0)
@@ -196,11 +204,15 @@ fun GodloRoot(container: AppContainer) {
                             onOpen = { dir -> nav.navigate(ReaderRoute(dir.absolutePath)) }
                         )
                     }
-                    composable<AudioRoute> { AudioLibraryScreen(container) }
+                    composable<AudioRoute> {
+                        AudioLibraryScreen(container, initialPath = it.toRoute<AudioRoute>().path)
+                    }
                     composable<VideosRoute> {
-                        VideoLibraryScreen(container, onOpen = {
-                            nav.navigate(VideoRoute(it.absolutePath))
-                        })
+                        VideoLibraryScreen(
+                            container,
+                            initialPath = it.toRoute<VideosRoute>().path,
+                            onOpen = { file -> nav.navigate(VideoRoute(file.absolutePath)) }
+                        )
                     }
                     composable<SettingsRoute> {
                         SettingsScreen(container, onOpenPythonLicenses = {

@@ -52,7 +52,10 @@ class DownloadTargetTest {
     @Test
     fun oneEpisodeOpensTheReader() {
         assertEquals(
-            DownloadTarget.Album(File(manga, "takecomic.jp/メイドインアビス/Vol.3")),
+            DownloadTarget.Album(
+                File(manga, "takecomic.jp/メイドインアビス/Vol.3"),
+                listOf("takecomic.jp", "メイドインアビス")
+            ),
             DownloadTarget.of(task(MediaKind.IMAGE, "$manga/takecomic.jp/メイドインアビス/Vol.3"), library)
         )
     }
@@ -60,7 +63,7 @@ class DownloadTargetTest {
     @Test
     fun galleryPicturesOpenTheirAlbum() {
         assertEquals(
-            DownloadTarget.Album(File(manga, "x.com/someone")),
+            DownloadTarget.Album(File(manga, "x.com/someone"), listOf("x.com")),
             DownloadTarget.of(
                 task(MediaKind.IMAGE, "$manga/x.com/someone/1.jpg", "$manga/x.com/someone/2.jpg"),
                 library
@@ -84,11 +87,14 @@ class DownloadTargetTest {
     @Test
     fun audioAndVideoPlay() {
         assertEquals(
-            DownloadTarget.Audio(listOf(File("/d/yt-dlp/youtube.com/a.mp3"))),
+            DownloadTarget.Audio(
+                listOf(File("/d/yt-dlp/youtube.com/a.mp3")),
+                listOf("youtube.com")
+            ),
             DownloadTarget.of(task(MediaKind.AUDIO, "/d/yt-dlp/youtube.com/a.mp3"), library)
         )
         assertEquals(
-            DownloadTarget.Video(File("/d/yt-dlp/youtube.com/v.mp4")),
+            DownloadTarget.Video(File("/d/yt-dlp/youtube.com/v.mp4"), listOf("youtube.com")),
             DownloadTarget.of(task(MediaKind.VIDEO, "/d/yt-dlp/youtube.com/v.mp4"), library)
         )
     }
@@ -103,6 +109,25 @@ class DownloadTargetTest {
                 task(MediaKind.VIDEO, "/d/yt-dlp/youtube.com/v.mp4", state = TaskState.FAILED),
                 library
             )
+        )
+    }
+
+    @Test
+    fun aPlaylistPlaysOverItsFolder() {
+        fun track(name: String) = MediaFile(
+            File("/d/yt-dlp/youtube.com/Mix/$name"),
+            listOf("youtube.com", "Mix", name),
+            0,
+            0
+        )
+        val tracks = listOf(track("001 a.mp3"), track("002 b.mp3"))
+        val target = DownloadTarget.of(
+            task(MediaKind.AUDIO, *tracks.map { it.file.path }.toTypedArray()),
+            library.copy(audio = tracks)
+        )
+        assertEquals(
+            DownloadTarget.Audio(tracks.map { it.file }, listOf("youtube.com", "Mix")),
+            target
         )
     }
 }

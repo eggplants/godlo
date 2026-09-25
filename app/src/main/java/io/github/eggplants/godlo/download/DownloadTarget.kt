@@ -4,17 +4,24 @@ import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.library.Library
 import java.io.File
 
-/** Where a finished download can be opened. */
+/**
+ * Where a finished download can be opened: a viewer, over the folder in its library tab that
+ * backing out of the viewer returns to.
+ */
 sealed interface DownloadTarget {
-    /** One episode or gallery: straight to the reader. */
-    data class Album(val dir: File) : DownloadTarget
+    /** The folder in the library tab, `site/title/...`. */
+    val folder: List<String>
 
-    /** Several albums, e.g. a run of episodes: their folder in the image library. */
-    data class ImageFolder(val path: List<String>) : DownloadTarget
+    /** One episode or gallery: the reader. */
+    data class Album(val dir: File, override val folder: List<String>) : DownloadTarget
 
-    data class Video(val file: File) : DownloadTarget
+    /** Several albums, e.g. a run of episodes: just their folder in the image library. */
+    data class ImageFolder(override val folder: List<String>) : DownloadTarget
 
-    data class Audio(val files: List<File>) : DownloadTarget
+    data class Video(val file: File, override val folder: List<String>) : DownloadTarget
+
+    data class Audio(val files: List<File>, override val folder: List<String>) :
+        DownloadTarget
 
     companion object {
         /**
@@ -25,21 +32,31 @@ sealed interface DownloadTarget {
             if (task.state != TaskState.DONE || task.files.isEmpty()) return null
             val files = task.files.map(::File)
             val paths = files.map { it.absolutePath }.toSet()
-            val videos = library.video.map { it.file }.filter { it.absolutePath in paths }
+            val video = library.video.firstOrNull { it.file.absolutePath in paths }
+                ?.let { Video(it.file, it.path.dropLast(1)) }
             return when (task.kind) {
                 MediaKind.AUDIO ->
-                    library.audio.map { it.file }.filter { it.absolutePath in paths }
+                    library.audio.filter { it.file.absolutePath in paths }
                         .takeIf { it.isNotEmpty() }
-                        ?.let { found -> Audio(files.filter { it in found }) }
+                        ?.let { found ->
+                            val byPath = found.associateBy { it.file.absolutePath }
+                            Audio(
+                                // In the order they were downloaded, as a playlist runs.
+                                files.filter { it.absolutePath in byPath },
+                                commonPrefix(found.map { it.path.dropLast(1) })
+                            )
+                        }
 
-                MediaKind.VIDEO -> videos.firstOrNull()?.let(::Video)
+                MediaKind.VIDEO -> video
 
                 MediaKind.IMAGE -> {
                     // getjmanga reports episode directories, gallery-dl the pictures in them.
                     val byDir = library.albums.associateBy { it.dir }
                     val albums = files.mapNotNull { byDir[it] ?: byDir[it.parentFile] }.distinct()
                     when {
-                        albums.size == 1 -> Album(albums.single().dir)
+                        albums.size == 1 -> albums.single().let {
+                            Album(it.dir, it.path.dropLast(1))
+                        }
 
                         albums.isNotEmpty() -> ImageFolder(
                             commonPrefix(
@@ -50,7 +67,7 @@ sealed interface DownloadTarget {
                         )
 
                         // gallery-dl also saves the videos of image sites.
-                        else -> videos.firstOrNull()?.let(::Video)
+                        else -> video
                     }
                 }
             }

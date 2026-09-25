@@ -83,14 +83,14 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AudioLibraryScreen(container: AppContainer) {
+fun AudioLibraryScreen(container: AppContainer, initialPath: String = "") {
     val library by container.library.library.collectAsStateWithLifecycle()
     val nowPlaying by container.audio.state.collectAsStateWithLifecycle()
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.audioLayout
     val scope = rememberCoroutineScope()
     // The folder being looked at, e.g. "youtube.com/Some album"; empty for the sites.
-    var pathKey by rememberSaveable { mutableStateOf("") }
+    var pathKey by rememberSaveable { mutableStateOf(initialPath) }
     val path = pathKey.split("/").filter { it.isNotEmpty() }
     var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
     val nodes = LibraryTree.media.children(library.audio, path)
@@ -256,13 +256,13 @@ fun AudioArtwork(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun VideoLibraryScreen(container: AppContainer, onOpen: (File) -> Unit) {
+fun VideoLibraryScreen(container: AppContainer, initialPath: String = "", onOpen: (File) -> Unit) {
     val library by container.library.library.collectAsStateWithLifecycle()
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.videoLayout
     val scope = rememberCoroutineScope()
     // The folder being looked at, e.g. "youtube.com/Some playlist"; empty for the sites.
-    var pathKey by rememberSaveable { mutableStateOf("") }
+    var pathKey by rememberSaveable { mutableStateOf(initialPath) }
     val path = pathKey.split("/").filter { it.isNotEmpty() }
     var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
     val nodes = LibraryTree.media.children(library.video, path)
