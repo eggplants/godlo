@@ -8,6 +8,26 @@ plugins {
     alias(libs.plugins.oss.licenses)
 }
 
+// The version comes from the latest `v<versionName>-<versionCode>` tag: v1.2.3-1 builds as
+// versionName 1.2.3 and versionCode 1. Commits past the tag keep its versionCode and get git
+// describe's suffix in the name (1.2.3-4-gabcdef0, -dirty with uncommitted changes); no tag at
+// all is 0.0.0 and 1.
+val gitDescribe: String = runCatching {
+    providers.exec {
+        commandLine("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", "--dirty")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+
+val gitVersion = Regex("""^v(\d+\.\d+\.\d+)-(\d+)(.*)$""").find(gitDescribe)?.destructured
+
+val gitVersionName: String = gitVersion?.let { (name, _, rest) -> name + rest } ?: "0.0.0"
+
+val gitVersionCode: Int = gitVersion?.let { (_, code, _) ->
+    // Android requires a versionCode of at least 1.
+    code.toInt().also { require(it >= 1) { "versionCode must be 1 or more: $gitDescribe" } }
+} ?: 1
+
 android {
     namespace = "io.github.eggplants.godlo"
     compileSdk {
@@ -18,8 +38,8 @@ android {
         applicationId = "io.github.eggplants.godlo"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = gitVersionCode
+        versionName = gitVersionName
 
         ndk {
             // Chaquopy ships Python for these ABIs only.
