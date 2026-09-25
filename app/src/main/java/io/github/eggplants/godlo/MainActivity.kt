@@ -2,6 +2,7 @@ package io.github.eggplants.godlo
 
 import android.app.PictureInPictureParams
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -9,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.ui.GodloRoot
 import io.github.eggplants.godlo.ui.theme.GodloTheme
@@ -51,6 +53,12 @@ class MainActivity : AppCompatActivity() {
                 GodloRoot(container)
             }
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Before the views, and so Compose, see the change.
+        AppLanguage.reapply(resources)
     }
 
     override fun onResume() {

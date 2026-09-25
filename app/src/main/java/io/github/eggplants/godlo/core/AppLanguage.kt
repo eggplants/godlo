@@ -2,6 +2,8 @@ package io.github.eggplants.godlo.core
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
+import android.os.Build
 import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -31,6 +33,23 @@ object AppLanguage {
         val config = Configuration(context.resources.configuration)
         config.setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
         return context.createConfigurationContext(config)
+    }
+
+    /**
+     * Puts the chosen language back into an activity's [resources] before Android 13. A
+     * configuration change the activity handles itself, such as rotation, brings back the
+     * device's language there, and AppCompat does not apply the chosen one again.
+     */
+    @Suppress("DEPRECATION") // Resources.updateConfiguration, which AppCompat itself uses here.
+    fun reapply(resources: Resources) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
+        val locales = AppCompatDelegate.getApplicationLocales()
+        if (locales.isEmpty) return
+        val chosen = LocaleList.forLanguageTags(locales.toLanguageTags())
+        if (resources.configuration.locales == chosen) return
+        val config = Configuration(resources.configuration)
+        config.setLocales(chosen)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     /**
