@@ -41,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
+import io.github.eggplants.godlo.core.ConfigFile
 import io.github.eggplants.godlo.download.DownloadTarget
 import io.github.eggplants.godlo.download.TaskState
 import io.github.eggplants.godlo.ui.download.DownloadScreen
@@ -53,6 +54,7 @@ import io.github.eggplants.godlo.ui.player.NowPlayingScreen
 import io.github.eggplants.godlo.ui.player.VideoPlayerScreen
 import io.github.eggplants.godlo.ui.reader.ReaderScreen
 import io.github.eggplants.godlo.ui.settings.AndroidLicensesScreen
+import io.github.eggplants.godlo.ui.settings.ConfigEditorScreen
 import io.github.eggplants.godlo.ui.settings.PythonLicensesScreen
 import io.github.eggplants.godlo.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -81,6 +83,9 @@ import kotlinx.serialization.Serializable
 @Serializable object PythonLicensesRoute
 
 @Serializable object PatrolRoute
+
+/** The editor for a tool's config file, by [ConfigFile] name. */
+@Serializable data class ConfigRoute(val file: String)
 
 /** The tabs, the libraries in the order the download screen offers the kinds of media. */
 private enum class TopLevel(
@@ -226,6 +231,7 @@ fun GodloRoot(container: AppContainer) {
                     composable<SettingsRoute> {
                         SettingsScreen(
                             container,
+                            onOpenConfig = { nav.navigate(ConfigRoute(it.name)) },
                             onOpenAndroidLicenses = { nav.navigate(AndroidLicensesRoute) },
                             onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) }
                         )
@@ -238,6 +244,13 @@ fun GodloRoot(container: AppContainer) {
                                 launchSingleTop = true
                             }
                         })
+                    }
+                    composable<ConfigRoute> {
+                        ConfigEditorScreen(
+                            container,
+                            ConfigFile.valueOf(it.toRoute<ConfigRoute>().file),
+                            onBack = { nav.popBackStack() }
+                        )
                     }
                     composable<AndroidLicensesRoute> {
                         AndroidLicensesScreen(onBack = { nav.popBackStack() })

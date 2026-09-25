@@ -59,6 +59,13 @@ data class DownloadRequest(
 @Serializable
 data class PatrolWork(val url: String, val title: String = "")
 
+/** A config file without the settings Godlo refuses; see `strip_ytdlp_config`. */
+@Serializable
+data class StrippedConfig(val text: String, val removed: List<RemovedSetting> = emptyList())
+
+@Serializable
+data class RemovedSetting(val setting: String, val reason: String)
+
 @Serializable
 data class Outcome(val status: String, val message: String = "")
 
@@ -122,6 +129,21 @@ class PythonBridge(private val context: Context) {
     fun forgetWork(configDir: File, url: String) {
         module.callAttr("forget_work", configDir.absolutePath, url)
     }
+
+    /** What is wrong with [text] as [file], read the way its tool reads it; empty when nothing. */
+    fun checkConfig(file: ConfigFile, text: String): String =
+        module.callAttr("check_config", file.fileName, text).toString()
+
+    /** The TOML document [text] as JSON; throws on a syntax error. */
+    fun tomlToJson(text: String): String = module.callAttr("toml_to_json", text).toString()
+
+    /** [original] changed to hold [json], keeping the comments where the values are the same. */
+    fun tomlFromJson(original: String, json: String): String =
+        module.callAttr("toml_from_json", original, json).toString()
+
+    /** yt-dlp.conf's [text] without the options Godlo refuses, and what those were. */
+    fun stripYtdlpConfig(text: String): StrippedConfig =
+        json.decodeFromString(module.callAttr("strip_ytdlp_config", text).toString())
 
     /** pip-installs the newest tools into [packagesDir]; they are used from the next launch on. */
     fun updateTools(): Outcome = try {

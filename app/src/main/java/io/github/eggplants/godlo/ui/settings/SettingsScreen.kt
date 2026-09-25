@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HighQuality
 import androidx.compose.material.icons.outlined.Info
@@ -66,6 +67,7 @@ import io.github.eggplants.godlo.MainActivity
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
+import io.github.eggplants.godlo.core.ConfigFile
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.EpisodeRange
 import io.github.eggplants.godlo.core.ReadingDirection
@@ -82,6 +84,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     container: AppContainer,
+    onOpenConfig: (ConfigFile) -> Unit,
     onOpenAndroidLicenses: () -> Unit,
     onOpenPythonLicenses: () -> Unit
 ) {
@@ -120,9 +123,21 @@ fun SettingsScreen(
                         onClick = { editingRoot = engine }
                     )
                 }
-                SettingItem(
-                    title = stringResource(R.string.settings_config_title),
-                    summary = stringResource(R.string.settings_config_body, Storage.configDir.path)
+            }
+
+            Section(stringResource(R.string.settings_config_title), Icons.Outlined.EditNote) {
+                for (config in ConfigFile.entries) {
+                    SettingItem(
+                        title = config.fileName,
+                        summary = stringResource(config.summary),
+                        onClick = { onOpenConfig(config) }
+                    )
+                }
+                Text(
+                    stringResource(R.string.settings_config_body, Storage.configDir.path),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 )
             }
 

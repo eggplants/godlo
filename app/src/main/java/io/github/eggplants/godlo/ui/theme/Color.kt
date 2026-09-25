@@ -85,3 +85,35 @@ val DarkColors = darkColorScheme(
     surfaceContainerHighest = Color(0xFF303333),
     surfaceDim = Color(0xFF0F1111)
 )
+
+/** What the config editor colours each kind of token with; see `SyntaxHighlight.kt`. */
+data class SyntaxColors(
+    val comment: Color,
+    val string: Color,
+    val number: Color,
+    val keyword: Color,
+    val key: Color,
+    val section: Color,
+    val option: Color
+)
+
+// Not from the scheme: the Neutral scheme has too little hue to tell tokens apart.
+val LightSyntax = SyntaxColors(
+    comment = Color(0xFF6E7781),
+    string = Color(0xFF0A3069),
+    number = Color(0xFF0550AE),
+    keyword = Color(0xFFCF222E),
+    key = Color(0xFF116329),
+    section = Color(0xFF8250DF),
+    option = Color(0xFF953800)
+)
+
+val DarkSyntax = SyntaxColors(
+    comment = Color(0xFF8B949E),
+    string = Color(0xFFA5D6FF),
+    number = Color(0xFF79C0FF),
+    keyword = Color(0xFFFF7B72),
+    key = Color(0xFF7EE787),
+    section = Color(0xFFD2A8FF),
+    option = Color(0xFFFFA657)
+)

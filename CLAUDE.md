@@ -57,6 +57,15 @@ Kotlin style comes from `.editorconfig`: `ktlint_code_style = android_studio` wi
     `nativeLibraryDir` only, which is why `useLegacyPackaging = true` is set.
   - `SettingsRepository.kt` (DataStore), `Storage.kt` (paths, `MediaKind`), `AppLanguage.kt`
     (per-app language via AppCompat).
+  - `ConfigFile.kt` -- the tools' own config files in `Download/Godlo/.config/`
+    (`yt-dlp.conf`, `gallery-dl.conf`, `getjmanga.toml`, `cookies.txt`), which
+    `ui/settings/ConfigEditorScreen.kt` edits as a tree (`ConfigTree.kt`, JSON; TOML goes through
+    Python's `toml_to_json` / `toml_from_json`, which keep the comments) or as text
+    (`CodeEditor.kt`: line numbers, and colours from the lexers in `SyntaxHighlight.kt`), checking
+    them with `check_config` before it saves. Settings that would move files out of where the
+    library looks, or that Godlo overrides on every run, are refused: `ConfigRules.kt` for
+    gallery-dl.conf and getjmanga.toml, `strip_ytdlp_config` for yt-dlp.conf. Import drops them,
+    the editor will not add them, and the download drops them again for files written elsewhere.
 - **`app/src/main/python/godlo_bridge.py`** -- the one Python module Kotlin calls: `setup`,
   `detect` (which tools can take a URL), `download`, the patrol functions and `update_tools`.
   Cancellation is the `Cancelled` exception, a `BaseException` so the tools' `except Exception`

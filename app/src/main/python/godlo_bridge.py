@@ -414,10 +414,139 @@ def _run_ytdlp(request: dict, callback: object) -> None:
         {"key": "EmbedThumbnail", "already_have_thumbnail": False},
     ]
     opts["postprocessors"] = postprocessors
+    config_file = Path(request.get("config_dir") or _env["config_dir"]) / "yt-dlp.conf"
+    if config_file.exists():
+        _apply_ytdlp_config(opts, config_file)
 
     callback.progress(-1.0, _t("fetching"))
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.extract_info(url, download=True)
+
+
+#: What `yt-dlp.conf` may not change: how the app follows a download, and where it saves.
+_YTDLP_FIXED = frozenset({"logger", "progress_hooks", "postprocessor_hooks", "post_hooks", "noprogress", "paths", "outtmpl"})
+
+#: The options `yt-dlp.conf` may not have, by `dest`, and why; see `ConfigRules.kt` for the
+#: other files. "location": the app decides where files go. "unchecked": it would read files the
+#: app does not check. "ignored": it does nothing when the app runs yt-dlp.
+_YTDLP_REFUSED = {
+    "paths": "location",
+    "outtmpl": "location",
+    "config_locations": "unchecked",
+    "ignoreconfig": "ignored",
+    "noprogress": "ignored",
+    "batchfile": "ignored",
+}
+
+
+def strip_ytdlp_config(text: str) -> str:
+    """`text` without the options in `_YTDLP_REFUSED`, nor URLs, which nothing downloads.
+
+    Lines that lose nothing stay as they are, comments and all; the others are written
+    again from what is left of them.
+
+    Returns:
+        `{"text", "removed": [{"setting", "reason"}]}` as JSON.
+    """
+    import shlex
+
+    from yt_dlp.options import create_parser
+
+    parser = create_parser()
+    removed: list[dict] = []
+    lines = []
+    for line in text.splitlines(keepends=True):
+        try:
+            words = shlex.split(line, comments=True)
+        except ValueError:
+            # A quote left open: yt-dlp fails on it whole, which check_config reports.
+            lines.append(line)
+            continue
+        kept, dropped = _strip_ytdlp_words(parser, words)
+        removed += dropped
+        if not dropped:
+            lines.append(line)
+        elif kept:
+            lines.append(shlex.join(kept) + ("\n" if line.endswith("\n") else ""))
+    return json.dumps({"text": "".join(lines), "removed": removed}, ensure_ascii=False)
+
+
+def _strip_ytdlp_words(parser, words: list[str]) -> tuple[list[str], list[dict]]:  # noqa: ANN001
+    """`words` split into those kept and those refused, an option going with its value."""
+    kept: list[str] = []
+    dropped: list[dict] = []
+    i = 0
+    while i < len(words):
+        word = words[i]
+        taken = [word]
+        option = None
+        if word.startswith("--"):
+            name = word.split("=", 1)[0]
+            try:
+                option = parser._long_opt.get(name) or parser._long_opt[parser._match_long_opt(name)]  # noqa: SLF001
+            except Exception:  # noqa: BLE001 -- unknown: check_config says so
+                option = None
+            if option is not None and option.takes_value() and "=" not in word:
+                taken += words[i + 1 : i + 1 + option.nargs]
+        elif word.startswith("-") and len(word) > 1:
+            option = parser._short_opt.get(word[:2])  # noqa: SLF001
+            if option is not None and option.takes_value() and len(word) == 2:
+                taken += words[i + 1 : i + 1 + option.nargs]
+        i += len(taken)
+        if option is None and not word.startswith("-"):
+            dropped.append({"setting": word, "reason": "ignored"})
+        elif option is not None and option.dest in _YTDLP_REFUSED:
+            dropped.append({"setting": " ".join(taken), "reason": _YTDLP_REFUSED[option.dest]})
+        else:
+            kept += taken
+    return kept, dropped
+
+
+def _ytdlp_config_opts(config_file: Path) -> dict:
+    """The options `config_file` sets, as YoutubeDL takes them: only those unlike the defaults.
+
+    The refused ones (see `strip_ytdlp_config`) are left out, whatever wrote the file.
+
+    Raises:
+        ValueError: The file has an option yt-dlp does not know, or a bad value.
+    """
+    import optparse
+    import tempfile
+
+    import yt_dlp
+
+    stripped = json.loads(strip_ytdlp_config(config_file.read_text(encoding="utf-8")))["text"]
+    with tempfile.NamedTemporaryFile("w", suffix=".conf", dir=_env.get("cache_dir"), delete=False, encoding="utf-8") as tmp:
+        tmp.write(stripped)
+    try:
+        defaults = yt_dlp.parse_options(["--ignore-config"]).ydl_opts
+        chosen = yt_dlp.parse_options(["--ignore-config", "--config-locations", tmp.name]).ydl_opts
+    except (optparse.OptParseError, SystemExit) as exc:
+        # The message ends with the one line that says what is wrong, after the usage.
+        lines = [line for line in _clean(str(exc)).splitlines() if line.strip()]
+        last = lines[-1].split("error: ", 1)[-1] if lines else exc.__class__.__name__
+        raise ValueError(last) from exc
+    finally:
+        os.unlink(tmp.name)
+    out = {k: v for k, v in chosen.items() if not k.startswith("_") and defaults.get(k) != v}
+    if "postprocessors" in out:
+        out["postprocessors"] = [pp for pp in out["postprocessors"] if pp not in defaults["postprocessors"]]
+    return out
+
+
+def _apply_ytdlp_config(opts: dict, config_file: Path) -> None:
+    """Lay the options in `yt-dlp.conf` over `opts`, the way they would override the defaults."""
+    for key, value in _ytdlp_config_opts(config_file).items():
+        if key in _YTDLP_FIXED:
+            continue
+        if key == "postprocessors":
+            # One of a kind: the file's replaces the app's, e.g. -x with its own codec.
+            keys = {pp.get("key") for pp in value}
+            opts[key] = [pp for pp in opts.get(key, []) if pp.get("key") not in keys] + value
+        elif isinstance(value, dict) and isinstance(opts.get(key), dict):
+            opts[key] = {**opts[key], **value}
+        else:
+            opts[key] = value
 
 
 # gallery-dl -----------------------------------------------------------------
@@ -434,11 +563,13 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
     config_file = Path(request.get("config_dir") or _env["config_dir"]) / "gallery-dl.conf"
     if config_file.exists():
         config.load([str(config_file)])
+        _strip_gallery_dl_config(config._config)  # noqa: SLF001
     config.set(("extractor",), "base-directory", str(base) + os.sep)
     config.set(("output",), "mode", "null")
     config.set(("output",), "progress", False)
     cookies = request.get("cookies")
-    if cookies and os.path.exists(cookies):
+    # cookies.txt, unless gallery-dl.conf names cookies of its own.
+    if cookies and os.path.exists(cookies) and config.get(("extractor",), "cookies") is None:
         config.set(("extractor",), "cookies", cookies)
 
     # The site directory stands in for gallery-dl's leading "{category}".
@@ -490,6 +621,29 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
     if status and not Out.count:
         msg = _t("gallery_failed", status=status)
         raise RuntimeError(msg)
+
+
+def _strip_gallery_dl_config(root: dict) -> None:
+    """Drop what `ConfigRules.kt` refuses in gallery-dl.conf, whatever wrote the file.
+
+    `base-directory` and `directory`, at the top and in `extractor` down to a subcategory:
+    the app decides where files go, and one set for a category would win over the app's.
+    `subconfigs` would load files nothing checks.
+    """
+    root.pop("subconfigs", None)
+
+    def strip(node: object, depth: int) -> None:
+        if not isinstance(node, dict):
+            return
+        node.pop("base-directory", None)
+        node.pop("directory", None)
+        if depth < 2:
+            for child in node.values():
+                strip(child, depth + 1)
+
+    root.pop("base-directory", None)
+    root.pop("directory", None)
+    strip(root.get("extractor"), 0)
 
 
 # getjmanga ------------------------------------------------------------------
@@ -568,8 +722,8 @@ def _getjmanga_runner(request: dict, callback: object, *, patrol: bool = False):
             pass
 
     args = ["-d", str(root), "-F", request.get("image_format") or "jpg"]
-    if request.get("cbz"):
-        args.append("--cbz")
+    # Always one or the other: the app's setting, not getjmanga.toml's, decides.
+    args.append("--cbz" if request.get("cbz") else "--no-cbz")
     if patrol:
         parsed = cli.parse_args(args, patrol=True)
     else:
@@ -675,6 +829,112 @@ def forget_work(config_dir: str, url: str) -> None:
         del entries[i]
     if found:
         config_file.write_text(tomlkit.dumps(document), encoding="utf-8")
+
+
+# config files ---------------------------------------------------------------
+
+
+def check_config(name: str, text: str) -> str:
+    """Whether `text` would work as the config file `name`, read the way the tool reads it.
+
+    Args:
+        name: `yt-dlp.conf`, `gallery-dl.conf`, `getjmanga.toml` or `cookies.txt`.
+        text: What the file would hold.
+
+    Returns:
+        What is wrong with it, or an empty string when nothing is.
+    """
+    import tempfile
+
+    with tempfile.TemporaryDirectory(dir=_env.get("cache_dir")) as tmp:
+        path = Path(tmp) / name
+        path.write_text(text, encoding="utf-8")
+        try:
+            if name == "yt-dlp.conf":
+                _ytdlp_config_opts(path)
+            elif name == "gallery-dl.conf":
+                if not isinstance(json.loads(text), dict):
+                    return "not a JSON object"
+            elif name == "getjmanga.toml":
+                from getjmanga.config import load_config
+
+                load_config(path)
+            elif name == "cookies.txt":
+                from yt_dlp.cookies import YoutubeDLCookieJar
+
+                YoutubeDLCookieJar(str(path)).load(ignore_discard=True, ignore_expires=True)
+            else:
+                return f"unknown config file: {name}"
+        except Exception as exc:  # noqa: BLE001
+            # Named as the user knows the file, not as the temporary copy.
+            return _clean(str(exc)).replace(str(path), name) or exc.__class__.__name__
+    return ""
+
+
+def toml_to_json(text: str) -> str:
+    """The TOML document `text` as JSON, for the visual editor; dates become strings."""
+    import tomllib
+
+    return json.dumps(tomllib.loads(text), ensure_ascii=False, default=str)
+
+
+def toml_from_json(original: str, data_json: str) -> str:
+    """`original` changed to hold `data_json`, keeping its comments and layout where it can.
+
+    TOML has no null, so keys set to null are left out.
+    """
+    import tomlkit
+
+    document = tomlkit.parse(original)
+    _merge_toml(document, json.loads(data_json))
+    return tomlkit.dumps(document)
+
+
+def _merge_toml(old, new: dict) -> None:  # noqa: ANN001
+    """Make the TOML table `old` hold `new`, touching only what differs."""
+    for key in [key for key in old if key not in new or new[key] is None]:
+        del old[key]
+    for key, value in new.items():
+        if value is None:
+            continue
+        current = old.get(key)
+        if current is None:
+            old[key] = _without_none(value)
+            continue
+        if isinstance(value, dict) and isinstance(current, dict):
+            _merge_toml(current, value)
+        elif isinstance(value, list) and isinstance(current, list) and not _same(current, value):
+            # Item by item, so that adding a `[[patrol]]` entry keeps the comments in the others.
+            value = [item for item in value if item is not None]
+            for i, item in enumerate(value[: len(current)]):
+                if isinstance(item, dict) and isinstance(current[i], dict):
+                    _merge_toml(current[i], item)
+                elif not _same(current[i], item):
+                    current[i] = _without_none(item)
+            while len(current) > len(value):
+                del current[len(current) - 1]
+            for item in value[len(current) :]:
+                current.append(_without_none(item))
+        elif not _same(current, value):
+            old[key] = _without_none(value)
+
+
+def _same(item, value: object) -> bool:  # noqa: ANN001
+    """Whether the TOML `item` holds `value`; `toml_to_json` turned dates into strings."""
+    import datetime
+
+    plain = item.unwrap() if hasattr(item, "unwrap") else item
+    if isinstance(plain, (datetime.date, datetime.time)):
+        return str(plain) == value
+    return type(plain) is type(value) and plain == value
+
+
+def _without_none(value):  # noqa: ANN001, ANN202
+    if isinstance(value, dict):
+        return {k: _without_none(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [_without_none(v) for v in value if v is not None]
+    return value
 
 
 # updates --------------------------------------------------------------------
