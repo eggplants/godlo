@@ -107,6 +107,16 @@ Release. The key comes from the secrets `GODLO_KEYSTORE_BASE64`, `GODLO_KEYSTORE
 `GODLO_KEYSTORE_FILE` (and the other `GODLO_*`) environment variables are set. Actions are
 pinned to full commit SHAs (`mise run pin`).
 
+### F-Droid
+
+The store listing is in `fastlane/metadata/android/<locale>/` (en-US and ja-JP), which F-Droid
+reads from the tagged commit; add `changelogs/<versionCode>.txt` (500 characters at most) for
+every tag. `fdroid/metadata/io.github.eggplants.godlo.yml` is the recipe for fdroiddata: it
+deletes the checked-in `.so` and `.whl` files and rebuilds them with the NDK (both `build.sh`
+scripts use the NDK's clang when `ANDROID_NDK_HOME` is set), and passes `-Pgodlo.noDirty`,
+because F-Droid edits the checkout and `-dirty` would change the versionName. Dependencies must
+stay free software: no Google Play services or Firebase (the license list is AboutLibraries).
+
 ## Testing conventions
 
 JVM unit tests live in `app/src/test/java/io/github/eggplants/godlo/` and cover the pure logic

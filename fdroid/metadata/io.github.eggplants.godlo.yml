@@ -1,0 +1,46 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Downloads from services such as YouTube, which are not free software.
+    ja-JP: YouTube など、フリーソフトウェアではないサービスからダウンロードします。
+Categories:
+  - Download
+  - Local Media Player
+  - Reading
+License: MIT
+AuthorName: eggplants
+WebSite: https://github.com/eggplants/godlo
+SourceCode: https://github.com/eggplants/godlo
+IssueTracker: https://github.com/eggplants/godlo/issues
+Changelog: https://github.com/eggplants/godlo/releases
+Donate: https://github.com/sponsors/eggplants
+
+AutoName: Godlo
+
+RepoType: git
+Repo: https://github.com/eggplants/godlo.git
+
+Builds:
+  - versionName: 0.1.0
+    versionCode: 2
+    commit: v0.1.0-2
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y python3.13 python3.13-venv python3-pip curl
+    gradle:
+      - yes
+    prebuild: rm -f ../native/wheels/*.whl
+    scandelete:
+      - app/src/main/jniLibs
+    build:
+      - ANDROID_NDK_HOME=$$NDK$$ ../native/webp-stub/build.sh
+      - ANDROID_NDK_HOME=$$NDK$$ ../native/pillow-libs/build.sh
+    ndk: r28c
+    gradleprops:
+      - godlo.noDirty
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$
+UpdateCheckData: '|^v[0-9.]+-(\d+)$||^v([0-9.]+)-\d+$'
+CurrentVersion: 0.1.0
+CurrentVersionCode: 2

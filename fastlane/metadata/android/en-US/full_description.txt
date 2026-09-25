@@ -1,0 +1,31 @@
+<p>Godlo runs <a href="https://github.com/yt-dlp/yt-dlp">yt-dlp</a>, <a href="https://github.com/mikf/gallery-dl">gallery-dl</a> and <a href="https://pypi.org/project/getjmanga/">getjmanga</a> on the device, and lets you browse, read, watch and listen to what they saved. The tools are the real Python packages, not reimplementations, so they support the same sites as on a PC.</p>
+
+<p><b>Downloads</b></p>
+<ul>
+<li>Paste a URL, or share it from a browser or any other app. Godlo detects which tools can take the URL and whether it is video, audio or images.</li>
+<li>yt-dlp: video (quality selectable) or audio (format selectable), and whole playlists.</li>
+<li>gallery-dl: images from the sites it supports.</li>
+<li>getjmanga: manga episodes, the next and previous ones too, with optional CBZ output. Works can be stored for <i>patrol</i>, which fetches their new episodes later.</li>
+<li>Downloads run one at a time in the background, with a progress notification.</li>
+</ul>
+
+<p><b>Library</b></p>
+<ul>
+<li>Image, audio and video tabs list everything in the save directories, grouped by site and then by title, user or playlist.</li>
+<li>Files that other apps add or delete show up too.</li>
+</ul>
+
+<p><b>Reader and players</b></p>
+<ul>
+<li>A reader for manga and pictures: right-to-left, left-to-right or vertical, with single pages or two-page spreads.</li>
+<li>An audio player with background playback, and a video player with picture-in-picture.</li>
+</ul>
+
+<p><b>Other</b></p>
+<ul>
+<li>Update yt-dlp, gallery-dl and getjmanga from the settings without a new app version.</li>
+<li>Configuration files for the tools (gallery-dl.conf, getjmanga.toml, cookies.txt) are read from Download/Godlo/.config/.</li>
+<li>English and Japanese UI, light and dark themes, and dynamic color.</li>
+</ul>
+
+<p>The tools write to Download/Godlo/ with plain file paths, so Godlo asks for the "All files access" permission. Only arm64-v8a and x86_64 devices are supported.</p>

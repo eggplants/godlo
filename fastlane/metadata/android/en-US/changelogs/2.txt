@@ -1,0 +1,5 @@
+First release on F-Droid.
+
+- Download with yt-dlp, gallery-dl and getjmanga
+- Image, audio and video libraries
+- Manga and picture reader, audio and video players
