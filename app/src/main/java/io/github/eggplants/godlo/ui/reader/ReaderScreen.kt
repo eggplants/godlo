@@ -307,6 +307,7 @@ private fun PagedReader(
             if (indices == null) {
                 ChapterEnd(
                     chapter,
+                    rtl,
                     onOpenAlbum,
                     Modifier.pointerInput(Unit) {
                         detectTapGestures(onTap = tap)
@@ -365,6 +366,7 @@ private fun SpreadPage(first: Page, second: Page, rtl: Boolean, onClick: (Offset
 @Composable
 private fun ChapterEnd(
     chapter: Chapter,
+    rtl: Boolean,
     onOpenAlbum: (File) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -373,6 +375,9 @@ private fun ChapterEnd(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // The icons point the way the bottom bar's episode buttons do, which follow the pages.
+        val nextIcon = if (rtl) Icons.Filled.SkipPrevious else Icons.Filled.SkipNext
+        val previousIcon = if (rtl) Icons.Filled.SkipNext else Icons.Filled.SkipPrevious
         Text(
             stringResource(R.string.reader_end),
             style = MaterialTheme.typography.headlineSmall,
@@ -380,7 +385,7 @@ private fun ChapterEnd(
         )
         chapter.next?.let { next ->
             FilledTonalButton(onClick = { onOpenAlbum(next) }) {
-                Icon(Icons.Filled.SkipNext, null)
+                Icon(nextIcon, null)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.reader_next, next.name),
@@ -391,7 +396,7 @@ private fun ChapterEnd(
         }
         chapter.previous?.let { previous ->
             OutlinedButton(onClick = { onOpenAlbum(previous) }) {
-                Icon(Icons.Filled.SkipPrevious, null, tint = Color.White)
+                Icon(previousIcon, null, tint = Color.White)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.reader_previous, previous.name),
