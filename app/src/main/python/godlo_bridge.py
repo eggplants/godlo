@@ -692,13 +692,18 @@ def update_tools() -> str:
     import io
 
     from pip._internal.cli.main import main as pip_main
+    from pip._internal.metadata import select_backend
 
     target = _env["packages_dir"]
+    # pip walks sys.path for installed distributions, e.g. to put setuptools' version in its
+    # User-Agent, and chokes on the ones Chaquopy serves from the APK: their paths are
+    # AssetPath, which has no `.parent`. With --target and --no-deps it needs none of them.
+    select_backend().Environment.default = classmethod(lambda cls: cls([target]))
     old_out, old_err = sys.stdout, sys.stderr
     sys.stdout = sys.stderr = buf = io.StringIO()
     try:
         code = pip_main(
-            ["install", "--upgrade", "--no-deps", "--no-cache-dir", "--target", target, "yt-dlp", "yt-dlp-ejs", "gallery-dl", "getjmanga"]
+            ["install", "--upgrade", "--no-deps", "--no-cache-dir", "--disable-pip-version-check", "--target", target, "yt-dlp", "yt-dlp-ejs", "gallery-dl", "getjmanga"]
         )
     except SystemExit as exc:
         code = exc.code
