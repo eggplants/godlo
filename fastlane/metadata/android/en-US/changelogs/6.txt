@@ -1,0 +1,5 @@
+- Choose save locations with the system's folder picker
+- Save to a NAS (SMB) or another folder with no file path: downloads are copied there once they finish
+- The chosen language no longer turns back to the device's after rotating the screen (Android 12 and older)
+- Clearer wording in the settings
+- The native libraries are now built from source
