@@ -1,0 +1,100 @@
+name: pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+    paths:
+      - README.md
+      - fastlane/metadata/android/en-US/images/**
+      - .github/workflows/pages.yml
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - name: Render README.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          mkdir -p _site
+          url="${BASE_URL%/}/"
+          icon="fastlane/metadata/android/en-US/images/icon.png"
+          title="$(< fastlane/metadata/android/en-US/title.txt)"
+          description="$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' fastlane/metadata/android/en-US/short_description.txt)"
+          body="$(gh api markdown -f mode=gfm -f context="$GITHUB_REPOSITORY" -F text=@README.md)"
+          # Links to repository files other than the images go to GitHub.
+          body="$(sed -E 's#href="(LICENSE)"#href="https://github.com/'"$GITHUB_REPOSITORY"'/blob/master/\1"#g' <<< "$body")"
+          cat > _site/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>$title</title>
+          <meta name="description" content="$description">
+          <meta name="format-detection" content="telephone=no">
+          <link rel="canonical" href="$url">
+          <meta property="og:site_name" content="$title">
+          <meta property="og:url" content="$url">
+          <meta property="og:type" content="website">
+          <meta property="og:title" content="$title">
+          <meta property="og:description" content="$description">
+          <meta property="og:image" content="$url$icon">
+          <meta property="og:image:width" content="512">
+          <meta property="og:image:height" content="512">
+          <meta property="og:image:alt" content="$title icon">
+          <meta property="og:locale" content="en_US">
+          <meta property="og:locale:alternate" content="ja_JP">
+          <meta name="twitter:card" content="summary">
+          <meta name="twitter:site" content="@egpl0">
+          <meta name="twitter:title" content="$title">
+          <meta name="twitter:description" content="$description">
+          <meta name="twitter:image" content="$url$icon">
+          <link rel="icon" type="image/png" href="$icon">
+          <link rel="apple-touch-icon" href="$icon">
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown.min.css">
+          <style>
+            body { margin: 0; background-color: #fff; }
+            @media (prefers-color-scheme: dark) { body { background-color: #0d1117; } }
+            .markdown-body { box-sizing: border-box; max-width: 980px; margin: 0 auto; padding: 45px 16px; }
+          </style>
+          </head>
+          <body>
+          <article class="markdown-body">
+          $body
+          </article>
+          </body>
+          </html>
+          EOF
+          grep -oE 'src="fastlane/[^"]+"' README.md | sed -E 's/^src="|"$//g' | sort -u |
+            while read -r f; do install -D -m 644 "$f" "_site/$f"; done
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
