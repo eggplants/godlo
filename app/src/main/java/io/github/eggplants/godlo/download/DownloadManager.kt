@@ -3,6 +3,7 @@ package io.github.eggplants.godlo.download
 import android.content.Context
 import android.media.MediaScannerConnection
 import androidx.core.content.ContextCompat
+import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.DownloadCallback
@@ -45,6 +46,10 @@ data class DownloadTask(
     val audioFormat: String,
     /** getjmanga: the previous episodes too, besides the next ones. */
     val previous: Boolean = false,
+    /** getjmanga: remember the work, for [Patrol] to come back to. */
+    val store: Boolean = false,
+    /** getjmanga: new episodes of every stored work, rather than [url]. */
+    val patrol: Boolean = false,
     val state: TaskState = TaskState.QUEUED,
     val title: String = "",
     /** 0..1, or negative while the total is unknown. */
@@ -91,7 +96,8 @@ class DownloadManager(
         playlist: Boolean,
         videoQuality: String,
         audioFormat: String,
-        previous: Boolean = false
+        previous: Boolean = false,
+        store: Boolean = false
     ) {
         val task = DownloadTask(
             id = System.nanoTime(),
@@ -102,8 +108,31 @@ class DownloadManager(
             playlist = playlist,
             videoQuality = videoQuality,
             audioFormat = audioFormat,
-            previous = previous
+            previous = previous,
+            store = store
         )
+        add(task)
+    }
+
+    /** Queues a look for new episodes of every work stored for patrol. */
+    fun enqueuePatrol() {
+        add(
+            DownloadTask(
+                id = System.nanoTime(),
+                url = "",
+                engine = Engine.GETJMANGA,
+                kind = MediaKind.IMAGE,
+                site = "",
+                playlist = false,
+                videoQuality = "",
+                audioFormat = "",
+                title = AppLanguage.localize(context).getString(R.string.patrol_title),
+                patrol = true
+            )
+        )
+    }
+
+    private fun add(task: DownloadTask) {
         _tasks.update { listOf(task) + it }
         persist()
         ContextCompat.startForegroundService(context, DownloadService.intent(context))
@@ -171,6 +200,8 @@ class DownloadManager(
             root = root,
             playlist = task.playlist,
             previous = task.previous,
+            store = task.store,
+            patrol = task.patrol,
             videoQuality = task.videoQuality,
             audioFormat = task.audioFormat,
             imageFormat = settings.imageFormat,

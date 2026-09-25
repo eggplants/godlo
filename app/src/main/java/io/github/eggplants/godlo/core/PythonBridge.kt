@@ -40,6 +40,10 @@ data class DownloadRequest(
     val playlist: Boolean = false,
     /** getjmanga: every previous episode as well as the next ones (`--both`). */
     val previous: Boolean = false,
+    /** getjmanga: remember the work for [patrol] (`-S`). */
+    val store: Boolean = false,
+    /** getjmanga: download what is new in every stored work, instead of [url]. */
+    val patrol: Boolean = false,
     @SerialName("video_quality") val videoQuality: String = "1080",
     @SerialName("audio_format") val audioFormat: String = "mp3",
     @SerialName("image_format") val imageFormat: String = "jpg",
@@ -50,6 +54,10 @@ data class DownloadRequest(
     /** The UI language, "ja" or "en", for the progress and error text Python writes. */
     val lang: String = "en"
 )
+
+/** A getjmanga work stored for patrol: where the next patrol picks up, and its title. */
+@Serializable
+data class PatrolWork(val url: String, val title: String = "")
 
 @Serializable
 data class Outcome(val status: String, val message: String = "")
@@ -104,6 +112,15 @@ class PythonBridge(private val context: Context) {
         )
     } catch (e: Exception) {
         Outcome("error", e.message ?: e.javaClass.simpleName)
+    }
+
+    /** The works `getjmanga.toml` in [configDir] stores for patrol. */
+    fun patrolWorks(configDir: File): List<PatrolWork> =
+        json.decodeFromString(module.callAttr("patrol_works", configDir.absolutePath).toString())
+
+    /** Drops the work stored under [url] from the patrol. */
+    fun forgetWork(configDir: File, url: String) {
+        module.callAttr("forget_work", configDir.absolutePath, url)
     }
 
     /** pip-installs the newest tools into [packagesDir]; they are used from the next launch on. */

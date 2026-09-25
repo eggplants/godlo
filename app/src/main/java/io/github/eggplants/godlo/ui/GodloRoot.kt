@@ -51,6 +51,7 @@ import io.github.eggplants.godlo.ui.player.MiniPlayer
 import io.github.eggplants.godlo.ui.player.NowPlayingScreen
 import io.github.eggplants.godlo.ui.player.VideoPlayerScreen
 import io.github.eggplants.godlo.ui.reader.ReaderScreen
+import io.github.eggplants.godlo.ui.settings.PatrolScreen
 import io.github.eggplants.godlo.ui.settings.PythonLicensesScreen
 import io.github.eggplants.godlo.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -75,6 +76,8 @@ import kotlinx.serialization.Serializable
 @Serializable object NowPlayingRoute
 
 @Serializable object PythonLicensesRoute
+
+@Serializable object PatrolRoute
 
 private enum class TopLevel(
     val route: Any,
@@ -215,8 +218,19 @@ fun GodloRoot(container: AppContainer) {
                         )
                     }
                     composable<SettingsRoute> {
-                        SettingsScreen(container, onOpenPythonLicenses = {
-                            nav.navigate(PythonLicensesRoute)
+                        SettingsScreen(
+                            container,
+                            onOpenPatrol = { nav.navigate(PatrolRoute) },
+                            onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) }
+                        )
+                    }
+                    composable<PatrolRoute> {
+                        PatrolScreen(container, onBack = { nav.popBackStack() }, onStarted = {
+                            // To the queue, where the patrol shows how it goes.
+                            nav.navigate(DownloadsRoute) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
                         })
                     }
                     composable<PythonLicensesRoute> {

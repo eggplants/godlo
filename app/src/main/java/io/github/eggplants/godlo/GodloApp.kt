@@ -11,6 +11,7 @@ import coil3.video.VideoFrameDecoder
 import io.github.eggplants.godlo.core.PythonBridge
 import io.github.eggplants.godlo.core.SettingsRepository
 import io.github.eggplants.godlo.download.DownloadManager
+import io.github.eggplants.godlo.download.Patrol
 import io.github.eggplants.godlo.library.AudioArtFetcher
 import io.github.eggplants.godlo.library.LibraryRepository
 import io.github.eggplants.godlo.player.AudioPlayer
@@ -26,6 +27,7 @@ class AppContainer(context: Context) {
     val downloads = DownloadManager(context, python, settings)
     val library = LibraryRepository(settings)
     val audio = AudioPlayer(context)
+    val patrol = Patrol(python, downloads)
 
     /** A URL shared into the app, waiting for the download screen to pick it up. */
     val sharedUrl = MutableStateFlow<String?>(null)

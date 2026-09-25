@@ -38,6 +38,13 @@ _MESSAGES = {
         "locked": "Locked: {title}",
         "already_saved": "Already saved: {title}",
         "nothing_readable": "No readable episode (all locked)",
+        "patrol_stored": "Added to the patrol",
+        "patrol_title": "Patrol for new episodes",
+        "patrolling": "({n}/{total}) {title}",
+        "new_episode": "New: {title}",
+        "patrol_skip": "Skipped {title}: {error}",
+        "patrol_done": "{n} new episodes",
+        "nothing_to_patrol": "Nothing to patrol yet",
     },
     "ja": {
         "fetching": "情報を取得中",
@@ -53,6 +60,13 @@ _MESSAGES = {
         "locked": "ロック中: {title}",
         "already_saved": "保存済み: {title}",
         "nothing_readable": "読めるエピソードがありません (ロック中)",
+        "patrol_stored": "巡回に登録しました",
+        "patrol_title": "新しい話の巡回",
+        "patrolling": "({n}/{total}) {title}",
+        "new_episode": "新着: {title}",
+        "patrol_skip": "{title} をスキップ: {error}",
+        "patrol_done": "新しい話 {n} 件",
+        "nothing_to_patrol": "巡回する作品がまだありません",
     },
 }
 _lang = "en"
@@ -226,6 +240,8 @@ def download(request_json: str, callback: object) -> str:
             _run_ytdlp(request, callback)
         elif engine == "gallery-dl":
             _run_gallery_dl(request, callback)
+        elif engine == "getjmanga" and request.get("patrol"):
+            _patrol_getjmanga(request, callback)
         elif engine == "getjmanga":
             _run_getjmanga(request, callback)
         else:
@@ -479,12 +495,27 @@ def _run_gallery_dl(request: dict, callback: object) -> None:
 # getjmanga ------------------------------------------------------------------
 
 
-def _run_getjmanga(request: dict, callback: object) -> None:
+def _getjmanga_config(request: dict) -> Path:
+    """`getjmanga.toml` in the app's config directory: accounts, and the works to patrol."""
+    return Path(request.get("config_dir") or _env["config_dir"]) / "getjmanga.toml"
+
+
+def _getjmanga_runner(request: dict, callback: object, *, patrol: bool = False):  # noqa: ANN202
+    """A getjmanga `Runner` that reports to `callback`, and its report.
+
+    Args:
+        request: See `DownloadRequest` in Kotlin.
+        callback: See `download`.
+        patrol: Going through the stored works: report only the episodes newly
+            saved, and leave the task's title alone, since it spans many works.
+
+    Returns:
+        `(runner, report, config_file)`.
+    """
     from getjmanga import cli, downloader
     from getjmanga.config import load_config
     from getjmanga.console import Display
 
-    url = request["url"].strip()
     # getjmanga makes the <site>/ directory itself.
     root = Path(request["root"])
     root.mkdir(parents=True, exist_ok=True)
@@ -495,6 +526,8 @@ def _run_getjmanga(request: dict, callback: object) -> None:
     class Report(Display):
         #: The episode whose pages are being written, until it is finished.
         current = None
+        #: Episodes newly saved.
+        saved = 0
 
         def work(self, url: str) -> None:
             callback.progress(-1.0, _t("fetching"))
@@ -508,51 +541,140 @@ def _run_getjmanga(request: dict, callback: object) -> None:
         def pages(self, episode, done: int, total: int) -> None:  # noqa: ANN001
             Report.current = episode
             _check(callback)
-            callback.title(f"{episode.series_title} {episode.episode_title}")
+            if not patrol:
+                callback.title(f"{episode.series_title} {episode.episode_title}")
             callback.progress(done / total if total else -1.0, _t("pages", done=done, total=total))
 
         def finished(self, result) -> None:  # noqa: ANN001
             Report.current = None
-            # Set here too: an episode that was already saved never reaches pages().
-            callback.title(f"{result.episode.series_title} {result.episode.episode_title}")
+            title = f"{result.episode.series_title} {result.episode.episode_title}"
             if result.status == "locked":
                 callback.log(_t("locked", title=result.episode.episode_title))
                 return
             if result.status == "exists":
+                if patrol:
+                    return
                 callback.log(_t("already_saved", title=result.episode.episode_title))
+            else:
+                Report.saved += 1
+                if patrol:
+                    callback.log(_t("new_episode", title=title))
+            # Set here too: an episode that was already saved never reaches pages().
+            if not patrol:
+                callback.title(title)
             callback.file(str(result.save_dir))
 
         def done(self) -> None:
             pass
 
-    args = [url, "-d", str(root), "-F", request.get("image_format") or "jpg"]
-    if request.get("previous"):
-        args.append("--both")  # the previous episodes as well as the next ones
-    else:
-        args.append("--bulk" if request.get("playlist") else "--no-bulk")
+    args = ["-d", str(root), "-F", request.get("image_format") or "jpg"]
     if request.get("cbz"):
         args.append("--cbz")
-    parsed = cli.parse_args(args)
-    config_file = Path(request.get("config_dir") or _env["config_dir"]) / "getjmanga.toml"
+    if patrol:
+        parsed = cli.parse_args(args, patrol=True)
+    else:
+        args.insert(0, request["url"].strip())
+        if request.get("previous"):
+            args.append("--both")  # the previous episodes as well as the next ones
+        else:
+            args.append("--bulk" if request.get("playlist") else "--no-bulk")
+        parsed = cli.parse_args(args)
+    config_file = _getjmanga_config(request)
     config = load_config(config_file if config_file.exists() else Path(os.devnull))
     cli.apply_config(parsed, config)
     parsed.savedir = str(root)
-    runner = cli.Runner(parsed, config, None, Report())
+    return cli.Runner(parsed, config, None, Report()), Report, config_file
+
+
+def _visit(runner, report, root: Path, work, **options: bool):  # noqa: ANN001, ANN202
+    """`runner.visit(work, **options)`, removing the episode it was writing if it stops half way.
+
+    getjmanga counts an episode directory that exists as saved, so a
+    half-written one would never be completed by a later run.
+    """
+    from getjmanga import downloader
+
     try:
-        results = runner.run(url)
+        return runner.visit(work, **options)
     except BaseException:
-        # getjmanga counts an episode directory that exists as saved, so a
-        # half-written one would never be completed by a later run.
-        episode = Report.current
+        episode = report.current
         if episode is not None:
             import shutil
 
             partial = root / site_of(episode.url) / downloader._dirname(episode.series_title) / downloader._dirname(episode.episode_title)  # noqa: SLF001
             shutil.rmtree(partial, ignore_errors=True)
         raise
-    if results and all(r.status == "locked" for r in results):
+
+
+def _run_getjmanga(request: dict, callback: object) -> None:
+    from getjmanga.config import Work, store_work
+
+    runner, report, config_file = _getjmanga_runner(request, callback)
+    stored = _visit(runner, report, Path(request["root"]), Work(url=request["url"].strip()))
+    if stored is None:
         msg = _t("nothing_readable")
         raise RuntimeError(msg)
+    if request.get("store"):
+        # Where the next patrol picks up: the first episode still locked, else the last one read.
+        store_work(stored, config_file)
+        callback.log(_t("patrol_stored"))
+
+
+def _patrol_getjmanga(request: dict, callback: object) -> None:
+    """Download what is new in every work stored for patrol, as `getjmanga patrol` does."""
+    from getjmanga.cli import GetjmangaError, HTTPError
+    from getjmanga.config import store_work
+
+    runner, report, config_file = _getjmanga_runner(request, callback, patrol=True)
+    works = runner.config.patrol
+    if not works:
+        msg = _t("nothing_to_patrol")
+        raise RuntimeError(msg)
+    callback.title(_t("patrol_title"))
+    for n, work in enumerate(works, 1):
+        _check(callback)
+        callback.log(_t("patrolling", n=n, total=len(works), title=work.title or work.url))
+        try:
+            # A chain entry sits at the first episode still locked: onwards only, as `getjmanga patrol` goes.
+            stored = _visit(runner, report, Path(request["root"]), work, bulk=True, back=False)
+        except (GetjmangaError, HTTPError) as exc:
+            # One work failing, e.g. taken down, leaves the others to go through.
+            callback.log(_t("patrol_skip", title=work.title or work.url, error=_clean(str(exc))))
+            continue
+        # A chain moves on to the first episode still locked, for the next patrol to try again.
+        if stored is not None and stored != work:
+            store_work(stored, config_file, replacing=work.url)
+    # In the log, which outlives the progress line once the task is done.
+    callback.log(_t("patrol_done", n=report.saved))
+
+
+def patrol_works(config_dir: str) -> str:
+    """The works stored for patrol, as JSON: `[{"url", "title"}]`, in file order."""
+    from getjmanga.config import load_config
+
+    config_file = _getjmanga_config({"config_dir": config_dir})
+    if not config_file.exists():
+        return "[]"
+    works = load_config(config_file).patrol
+    return json.dumps([{"url": work.url, "title": work.title} for work in works])
+
+
+def forget_work(config_dir: str, url: str) -> None:
+    """Drop the work stored under `url` from the patrol, keeping the rest of the file as it is."""
+    import tomlkit
+
+    config_file = _getjmanga_config({"config_dir": config_dir})
+    if not config_file.exists():
+        return
+    document = tomlkit.parse(config_file.read_text(encoding="utf-8"))
+    entries = document.get("patrol")
+    if entries is None:
+        return
+    found = [i for i, entry in enumerate(entries) if entry.get("url") == url]
+    for i in reversed(found):
+        del entries[i]
+    if found:
+        config_file.write_text(tomlkit.dumps(document), encoding="utf-8")
 
 
 # updates --------------------------------------------------------------------

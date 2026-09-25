@@ -58,6 +58,16 @@
     <string name="whole_playlist">プレイリスト全体</string>
     <string name="following_episodes">続きの話もまとめて</string>
     <string name="previous_episodes">前の話もまとめて</string>
+    <string name="patrol_title">新しい話の巡回</string>
+    <string name="patrol_store">巡回リストに追加</string>
+    <string name="patrol_run">今すぐ巡回</string>
+    <string name="patrol_works">巡回する作品</string>
+    <string name="patrol_empty_title">巡回する作品はありません</string>
+    <string name="patrol_empty_body">getjmanga で「巡回リストに追加」をオンにしてダウンロードすると、ここに追加され、新しい話をあとからまとめて取得できます。</string>
+    <string name="patrol_forget">巡回から外す</string>
+    <plurals name="patrol_works_summary">
+        <item quantity="other">%d 作品</item>
+    </plurals>
     <string name="download">ダウンロード</string>
     <string name="retry">再試行</string>
     <string name="open">開く</string>

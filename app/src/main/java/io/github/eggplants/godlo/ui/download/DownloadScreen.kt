@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Warning
@@ -144,6 +145,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
         }
     val notificationPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val patrolWorks by container.patrol.works.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -152,6 +154,18 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
             TopAppBar(
                 title = { Text("Godlo") },
                 actions = {
+                    if (patrolWorks.isNotEmpty()) {
+                        IconButton(
+                            onClick = container.patrol::start,
+                            // One patrol at a time: another would only go over the same works.
+                            enabled = tasks.none { it.patrol && !it.finished }
+                        ) {
+                            Icon(
+                                Icons.Filled.Update,
+                                contentDescription = stringResource(R.string.patrol_run)
+                            )
+                        }
+                    }
                     if (tasks.any { it.finished }) {
                         IconButton(onClick = { confirmingClear = true }) {
                             Icon(
@@ -484,6 +498,18 @@ private fun DownloadFormCard(
                     },
                     trailingContent = {
                         Switch(checked = form.previous, onCheckedChange = vm::setPrevious)
+                    },
+                    colors = androidx.compose.material3.ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                    )
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.patrol_store)) },
+                    leadingContent = {
+                        Icon(Icons.Filled.Update, contentDescription = null)
+                    },
+                    trailingContent = {
+                        Switch(checked = form.store, onCheckedChange = vm::setStore)
                     },
                     colors = androidx.compose.material3.ListItemDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest

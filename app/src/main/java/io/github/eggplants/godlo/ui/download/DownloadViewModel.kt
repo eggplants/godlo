@@ -32,6 +32,8 @@ data class DownloadForm(
     val playlist: Boolean = false,
     /** getjmanga: the previous episodes too; implies [playlist], as `--both` follows both ways. */
     val previous: Boolean = false,
+    /** getjmanga: store the work for the patrol to come back to for new episodes. */
+    val store: Boolean = true,
     val videoQuality: String = "1080",
     val audioFormat: String = "mp3",
     /** The tools that can take the URL; null until detection says, when any may. */
@@ -148,6 +150,8 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
         it.copy(playlist = value, previous = it.previous && value)
     }
 
+    fun setStore(value: Boolean) = _form.update { it.copy(store = value) }
+
     fun setPrevious(value: Boolean) = _form.update {
         it.copy(previous = value, playlist = it.playlist || value)
     }
@@ -167,7 +171,8 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             playlist = form.playlist,
             videoQuality = form.videoQuality,
             audioFormat = form.audioFormat,
-            previous = form.previous && engine == Engine.GETJMANGA
+            previous = form.previous && engine == Engine.GETJMANGA,
+            store = form.store && engine == Engine.GETJMANGA
         )
         _form.update {
             it.copy(
