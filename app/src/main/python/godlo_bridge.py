@@ -146,30 +146,60 @@ def site_of(url: str) -> str:
 
 
 def detect(url: str) -> str:
-    """Pick the tool and the kind of media for `url`.
+    """Pick the tool and the kind of media for `url`, and list every tool that can take it.
 
     getjmanga first, since its sites are manga; then gallery-dl for image
     sites; yt-dlp for everything else.
 
     Returns:
-        `{"engine", "kind", "site"}` as JSON.
+        `{"engine", "kind", "site", "engines"}` as JSON; `engines` is best first.
     """
     url = url.strip()
-    engine, kind = "yt-dlp", "video"
+    engines = supported_engines(url)
+    engine = engines[0]
+    kind = "video" if engine == "yt-dlp" else "image"
+    return json.dumps({"engine": engine, "kind": kind, "site": site_of(url), "engines": engines})
+
+
+def supported_engines(url: str) -> list[str]:
+    """The tools with an extractor for `url`, best first; yt-dlp when none has.
+
+    yt-dlp's generic extractor takes any page, and gallery-dl's directlink any
+    file link, so neither counts as knowing a site: yt-dlp is left out only when
+    another tool knows the site and yt-dlp does not.
+    """
+    engines = []
+    knows_site = False
     try:
         from getjmanga import find_extractor
 
         find_extractor(url)
-        engine, kind = "getjmanga", "image"
+        engines.append("getjmanga")
+        knows_site = True
     except Exception:  # noqa: BLE001
-        try:
-            from gallery_dl import extractor
+        pass
+    try:
+        from gallery_dl import extractor
 
-            if extractor.find(url) is not None:
-                engine, kind = "gallery-dl", "image"
-        except Exception:  # noqa: BLE001
-            pass
-    return json.dumps({"engine": engine, "kind": kind, "site": site_of(url)})
+        found = extractor.find(url)
+        if found is not None:
+            engines.append("gallery-dl")
+            knows_site = knows_site or found.category != "directlink"
+    except Exception:  # noqa: BLE001
+        pass
+    if not knows_site or _ytdlp_knows(url):
+        engines.append("yt-dlp")
+    return engines
+
+
+def _ytdlp_knows(url: str) -> bool:
+    """Whether one of yt-dlp's site extractors, not the generic one, takes `url`."""
+    try:
+        from yt_dlp.extractor import gen_extractor_classes
+
+        return any(ie.ie_key() != "Generic" and ie.suitable(url) for ie in gen_extractor_classes())
+    except Exception:  # noqa: BLE001
+        return True
 
 
 def download(request_json: str, callback: object) -> str:

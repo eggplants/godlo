@@ -22,7 +22,13 @@ enum class Engine(val id: String, val kinds: List<MediaKind>) {
 }
 
 @Serializable
-data class Detection(val engine: String, val kind: String, val site: String)
+data class Detection(
+    val engine: String,
+    val kind: String,
+    val site: String,
+    /** Every tool that can take the URL, best first. */
+    val engines: List<String> = emptyList()
+)
 
 @Serializable
 data class DownloadRequest(

@@ -31,7 +31,9 @@ data class DownloadForm(
     val detecting: Boolean = false,
     val playlist: Boolean = false,
     val videoQuality: String = "1080",
-    val audioFormat: String = "mp3"
+    val audioFormat: String = "mp3",
+    /** The tools that can take the URL; null until detection says, when any may. */
+    val supported: List<Engine>? = null
 ) {
     /**
      * The URL as the tools get it: trimmed, and with the full-width letters a Japanese keyboard
@@ -40,6 +42,15 @@ data class DownloadForm(
     val cleanUrl: String get() = cleanUrl(url)
 
     val valid: Boolean get() = cleanUrl.startsWith("http") && engine != null
+
+    fun allows(engine: Engine): Boolean = supported?.contains(engine) ?: true
+
+    fun allows(kind: MediaKind): Boolean = supported?.any { kind in it.kinds } ?: true
+
+    /** The tool for [kind]: the current one if it can, else the best one that can. */
+    fun engineFor(kind: MediaKind): Engine = engine?.takeIf { kind in it.kinds && allows(it) }
+        ?: supported?.firstOrNull { kind in it.kinds }
+        ?: if (kind == MediaKind.IMAGE) Engine.GALLERY_DL else Engine.YTDLP
 }
 
 @OptIn(FlowPreview::class)
@@ -73,7 +84,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
         if (it.cleanUrl == cleanUrl(url)) {
             it.copy(url = url)
         } else {
-            it.copy(url = url, manual = false, engine = null, site = "")
+            it.copy(url = url, manual = false, engine = null, site = "", supported = null)
         }
     }
 
@@ -97,14 +108,17 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                 )
             }
             val site = found.site
-            if (form.manual) {
-                form.copy(detecting = false, site = site)
+            val supported = found.engines.map(Engine::fromId).distinct().ifEmpty { null }
+            if (form.manual && form.engine?.let { supported?.contains(it) ?: true } == true) {
+                form.copy(detecting = false, site = site, supported = supported)
             } else {
                 form.copy(
                     detecting = false,
                     engine = Engine.fromId(found.engine),
                     kind = MediaKind.fromId(found.kind),
-                    site = site
+                    site = site,
+                    supported = supported,
+                    manual = false
                 )
             }
         }
@@ -125,10 +139,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun setKind(kind: MediaKind) = _form.update {
-        val engine =
-            it.engine?.takeIf { e -> kind in e.kinds }
-                ?: if (kind == MediaKind.IMAGE) Engine.GALLERY_DL else Engine.YTDLP
-        it.copy(kind = kind, engine = engine, manual = true)
+        it.copy(kind = kind, engine = it.engineFor(kind), manual = true)
     }
 
     fun setPlaylist(value: Boolean) = _form.update { it.copy(playlist = value) }
@@ -150,7 +161,14 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             audioFormat = form.audioFormat
         )
         _form.update {
-            it.copy(url = "", engine = null, site = "", manual = false, playlist = false)
+            it.copy(
+                url = "",
+                engine = null,
+                site = "",
+                manual = false,
+                playlist = false,
+                supported = null
+            )
         }
     }
 

@@ -360,6 +360,7 @@ private fun DownloadFormCard(
                         SegmentedButton(
                             selected = form.kind == kind,
                             onClick = { vm.setKind(kind) },
+                            enabled = form.allows(kind),
                             shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
                             // As tall as the tool chips beside it.
                             modifier = Modifier.height(FilterChipDefaults.Height),
@@ -391,6 +392,7 @@ private fun DownloadFormCard(
                         FilterChip(
                             selected = form.engine == engine,
                             onClick = { vm.setEngine(engine) },
+                            enabled = form.allows(engine),
                             label = { Text(engine.id) }
                         )
                     }
