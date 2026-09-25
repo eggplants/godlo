@@ -52,7 +52,9 @@ sealed interface DownloadTarget {
                 MediaKind.IMAGE -> {
                     // getjmanga reports episode directories, gallery-dl the pictures in them.
                     val byDir = library.albums.associateBy { it.dir }
-                    val albums = files.mapNotNull { byDir[it] ?: byDir[it.parentFile] }.distinct()
+                    val albums = files.mapNotNull { file ->
+                        byDir[file] ?: file.parentFile?.let(byDir::get)
+                    }.distinct()
                     when {
                         albums.size == 1 -> albums.single().let {
                             Album(it.dir, it.path.dropLast(1))
