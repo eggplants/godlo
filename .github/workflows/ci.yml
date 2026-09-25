@@ -30,4 +30,9 @@ jobs:
           # The versions live in the catalog and the wrapper, not only in the build scripts.
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', 'gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
+      - name: Install NDK r28c
+        # native/build.sh builds with it, the same NDK as F-Droid.
+        run: |
+          [[ -d "$ANDROID_HOME/ndk/28.2.13676358" ]] ||
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" >/dev/null
       - run: mise run ci

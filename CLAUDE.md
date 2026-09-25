@@ -89,12 +89,18 @@ Kotlin style comes from `.editorconfig`: `ktlint_code_style = android_studio` wi
 ### Native workarounds (16 KB pages)
 
 Android 15+ devices with 16 KB pages refuse libraries aligned to 4 KB. Two prebuilt pieces are
-replaced for that, and the replacements are checked in:
+replaced for that, and the replacements are built rather than checked in, since F-Droid's
+scanner refuses prebuilt binaries in the source:
 
 - `native/webp-stub/` -- stub `libwebp.so` / `libwebpmux.so` in `app/src/main/jniLibs/` for
-  youtubedl-android's ffmpeg (built with zig; see `build.sh`). Only the libwebp encoder is lost.
+  youtubedl-android's ffmpeg. Only the libwebp encoder is lost.
 - `native/pillow-libs/build.sh` -- rebuilds Chaquopy's libjpeg and freetype into
   `native/wheels/*+16k*.whl`, which the Chaquopy `pip` block installs by exact version.
+
+`mise run build:native` (`native/build.sh`, which `build`, `build:release` and `ci` depend on)
+builds both with NDK r28c (`sdkmanager "ndk;28.2.13676358"`), the NDK F-Droid uses, so the
+output is byte for byte the same everywhere. Gradle's `checkNativeBuilds` stops the build while
+any of them is missing.
 
 ### Python dependencies
 
@@ -123,9 +129,8 @@ pinned to full commit SHAs (`mise run pin`).
 The store listing is in `fastlane/metadata/android/<locale>/` (en-US and ja-JP), which F-Droid
 reads from the tagged commit; add `changelogs/<versionCode>.txt` (500 characters at most) for
 every tag. `fdroid/metadata/io.github.eggplants.godlo.yml` is the recipe for fdroiddata: it
-deletes the checked-in `.so` and `.whl` files and rebuilds them with the NDK (both `build.sh`
-scripts use the NDK's clang when `ANDROID_NDK_HOME` is set), and passes `-Pgodlo.noDirty`,
-because F-Droid edits the checkout and `-dirty` would change the versionName. Dependencies must
+builds the libwebp stubs and the Pillow libraries with the NDK (both `build.sh` scripts use the
+NDK's clang when `ANDROID_NDK_HOME` is set), and passes `-Pgodlo.noDirty`, because F-Droid edits the checkout and `-dirty` would change the versionName. Dependencies must
 stay free software: no Google Play services or Firebase (the license list is AboutLibraries).
 
 ## Testing conventions

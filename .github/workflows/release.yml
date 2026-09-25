@@ -50,6 +50,13 @@ jobs:
           # Outside the checkout, so git describe does not report -dirty.
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "GODLO_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Install NDK r28c
+        # native/build.sh builds with it, the same NDK as F-Droid.
+        run: |
+          [[ -d "$ANDROID_HOME/ndk/28.2.13676358" ]] ||
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" >/dev/null
+      - name: Build the native libraries
+        run: mise run build:native
       - name: Build
         env:
           GODLO_KEYSTORE_PASSWORD: ${{ secrets.GODLO_KEYSTORE_PASSWORD }}

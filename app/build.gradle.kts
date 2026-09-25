@@ -205,6 +205,39 @@ abstract class PythonLicenses : DefaultTask() {
     }
 }
 
+// native/build.sh builds these instead of git keeping them (F-Droid's scanner refuses prebuilt
+// binaries). Without the stubs youtubedl-android's own libwebp, aligned to 4 KB, would go into
+// the APK and ffmpeg would not load on 16 KB page devices, and without the wheels pip fails
+// less clearly, so stop the build first.
+val nativeBuilds = listOf("arm64-v8a", "x86_64").flatMap { abi ->
+    val wheelAbi = abi.replace('-', '_')
+    listOf(
+        file("src/main/jniLibs/$abi/libwebp.so"),
+        file("src/main/jniLibs/$abi/libwebpmux.so"),
+        rootProject.file(
+            "native/wheels/chaquopy_libjpeg-1.5.3+16k-py3-none-android_24_$wheelAbi.whl"
+        ),
+        rootProject.file(
+            "native/wheels/chaquopy_freetype-2.9.1+16k-py3-none-android_24_$wheelAbi.whl"
+        )
+    )
+}
+val checkNativeBuilds = tasks.register("checkNativeBuilds") {
+    doLast {
+        val missing = nativeBuilds.filterNot { it.isFile }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "Missing ${missing.joinToString { it.relativeTo(rootDir).path }}: " +
+                    "run `mise run build:native` (native/build.sh) first."
+            )
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn(checkNativeBuilds) }
+tasks.matching { it.name.matches(Regex("install\\w*PythonRequirements")) }.configureEach {
+    dependsOn(checkNativeBuilds)
+}
+
 // The license list of the Maven dependencies, for the about screen. Offline, so that the build
 // reads nothing but the POMs and gives the same list every time.
 aboutLibraries {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the 16 KB aligned libwebp stubs into app/src/main/jniLibs.
-# Needs zig (`mise x zig@latest -- ./native/webp-stub/build.sh`), or the NDK's clang when
-# ANDROID_NDK_HOME is set (as on F-Droid's build server).
+# Uses the NDK's clang when ANDROID_NDK_HOME is set, as native/build.sh (`mise run build:native`)
+# and F-Droid's build server do, and zig otherwise.
 set -euo pipefail
 cd "$(dirname "$0")"
 out=../../app/src/main/jniLibs

@@ -7,12 +7,20 @@ ktlint = "latest"
 pinact = "latest"
 usage = "latest"
 
+[tasks."build:native"]
+description = "Build the libwebp stubs and the Pillow libraries (needs NDK r28c)"
+run = "./native/build.sh"
+sources = ["native/build.sh", "native/webp-stub/*", "native/pillow-libs/*"]
+outputs = ["app/src/main/jniLibs/*/*.so", "native/wheels/*.whl"]
+
 [tasks.build]
 description = "Assemble the debug APK"
+depends = ["build:native"]
 run = "./gradlew assembleDebug"
 
 [tasks."build:release"]
 description = "Assemble the release APK signed with release.jks and the passwords in .env"
+depends = ["build:native"]
 run = '''
 GODLO_KEYSTORE_FILE="$PWD/release.jks" ./gradlew assembleRelease
 '''
@@ -53,5 +61,5 @@ depends = ["format"]
 
 [tasks.ci]
 description = "Run CI checks"
-depends = ["lint:kt"]
+depends = ["lint:kt", "build:native"]
 run = "./gradlew lint test assembleDebug"

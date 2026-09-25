@@ -17,6 +17,10 @@
 local.properties
 __pycache__/
 
+# Built by native/build.sh (mise run build:native), not checked in
+/app/src/main/jniLibs/
+/native/wheels/
+
 # Release signing secrets and key
 .env
 *.jks
