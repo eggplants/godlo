@@ -1,4 +1,4 @@
-package io.github.eggplants.godlo.ui.settings
+package io.github.eggplants.godlo.ui.library
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize

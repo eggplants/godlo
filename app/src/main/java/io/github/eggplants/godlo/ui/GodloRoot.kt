@@ -46,13 +46,13 @@ import io.github.eggplants.godlo.download.TaskState
 import io.github.eggplants.godlo.ui.download.DownloadScreen
 import io.github.eggplants.godlo.ui.library.AudioLibraryScreen
 import io.github.eggplants.godlo.ui.library.ImageLibraryScreen
+import io.github.eggplants.godlo.ui.library.PatrolScreen
 import io.github.eggplants.godlo.ui.library.VideoLibraryScreen
 import io.github.eggplants.godlo.ui.player.MiniPlayer
 import io.github.eggplants.godlo.ui.player.NowPlayingScreen
 import io.github.eggplants.godlo.ui.player.VideoPlayerScreen
 import io.github.eggplants.godlo.ui.reader.ReaderScreen
 import io.github.eggplants.godlo.ui.settings.AndroidLicensesScreen
-import io.github.eggplants.godlo.ui.settings.PatrolScreen
 import io.github.eggplants.godlo.ui.settings.PythonLicensesScreen
 import io.github.eggplants.godlo.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -209,7 +209,8 @@ fun GodloRoot(container: AppContainer) {
                         ImageLibraryScreen(
                             container,
                             initialPath = it.toRoute<ImagesRoute>().path,
-                            onOpen = { dir -> nav.navigate(ReaderRoute(dir.absolutePath)) }
+                            onOpen = { dir -> nav.navigate(ReaderRoute(dir.absolutePath)) },
+                            onOpenPatrol = { nav.navigate(PatrolRoute) }
                         )
                     }
                     composable<AudioRoute> {
@@ -225,7 +226,6 @@ fun GodloRoot(container: AppContainer) {
                     composable<SettingsRoute> {
                         SettingsScreen(
                             container,
-                            onOpenPatrol = { nav.navigate(PatrolRoute) },
                             onOpenAndroidLicenses = { nav.navigate(AndroidLicensesRoute) },
                             onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) }
                         )

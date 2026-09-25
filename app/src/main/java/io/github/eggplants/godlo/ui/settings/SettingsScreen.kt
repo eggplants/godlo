@@ -56,7 +56,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -82,12 +81,10 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     container: AppContainer,
-    onOpenPatrol: () -> Unit,
     onOpenAndroidLicenses: () -> Unit,
     onOpenPythonLicenses: () -> Unit
 ) {
     val settings by container.settings.state.collectAsStateWithLifecycle()
-    val patrolWorks by container.patrol.works.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     fun update(transform: (AppSettings) -> AppSettings) {
         scope.launch { container.settings.update(transform) }
@@ -155,15 +152,6 @@ fun SettingsScreen(
                 ) { v ->
                     update { it.copy(cbz = v) }
                 }
-                SettingItem(
-                    title = stringResource(R.string.patrol_works),
-                    summary = pluralStringResource(
-                        R.plurals.patrol_works_summary,
-                        patrolWorks.size,
-                        patrolWorks.size
-                    ),
-                    onClick = onOpenPatrol
-                )
             }
 
             Section(stringResource(R.string.settings_viewer), Icons.Outlined.AutoStories) {

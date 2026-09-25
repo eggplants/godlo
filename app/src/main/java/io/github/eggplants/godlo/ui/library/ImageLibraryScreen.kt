@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -78,7 +79,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen: (File) -> Unit) {
+fun ImageLibraryScreen(
+    container: AppContainer,
+    initialPath: String = "",
+    onOpen: (File) -> Unit,
+    onOpenPatrol: () -> Unit
+) {
     val library by container.library.library.collectAsStateWithLifecycle()
     // The folder being looked at, e.g. "takecomic.jp/メイドインアビス"; empty for the sites.
     var pathKey by rememberSaveable { mutableStateOf(initialPath) }
@@ -122,6 +128,9 @@ fun ImageLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
                     searching = !searching
                     if (!searching) query = ""
                 }) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
+                IconButton(onClick = onOpenPatrol) {
+                    Icon(Icons.Outlined.Update, stringResource(R.string.patrol_works))
+                }
                 LayoutMenuButton(layout) { next ->
                     scope.launch { container.settings.update { it.copy(imageLayout = next) } }
                 }

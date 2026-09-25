@@ -68,10 +68,6 @@
     <string name="patrol_empty_title">Nothing to patrol</string>
     <string name="patrol_empty_body">Download with getjmanga with “Add to the patrol” on, and its new episodes can be fetched from here later.</string>
     <string name="patrol_forget">Remove from the patrol</string>
-    <plurals name="patrol_works_summary">
-        <item quantity="one">%d work</item>
-        <item quantity="other">%d works</item>
-    </plurals>
     <string name="download">Download</string>
     <string name="retry">Retry</string>
     <string name="open">Open</string>
