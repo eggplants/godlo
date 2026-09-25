@@ -159,6 +159,9 @@
     <string name="tools_updated">更新しました。アプリを再起動すると反映されます。</string>
     <string name="tools_update_failed">更新に失敗しました。</string>
     <string name="tools_update_title">ツールの更新</string>
+    <string name="tools_restart">再起動</string>
+    <string name="tools_later">あとで</string>
+    <string name="tools_restart_after_downloads">ダウンロード中です。終わってからアプリを再起動してください。</string>
     <string name="root_dialog_title">%1$s の保存先</string>
     <string name="root_dialog_hint">この下に {サイト}/ を作って保存します</string>
     <string name="reset_default">既定に戻す</string>

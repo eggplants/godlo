@@ -1,5 +1,8 @@
 package io.github.eggplants.godlo.ui.settings
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eggplants.godlo.AppContainer
+import io.github.eggplants.godlo.MainActivity
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
 import io.github.eggplants.godlo.core.AppSettings
@@ -235,7 +239,7 @@ private fun ToolsSection(container: AppContainer) {
     val scope = rememberCoroutineScope()
     var refresh by remember { mutableIntStateOf(0) }
     var updating by remember { mutableStateOf(false) }
-    var result by remember { mutableStateOf<String?>(null) }
+    var result by remember { mutableStateOf<ToolsResult?>(null) }
     val versions by produceState<Map<String, String>?>(null, refresh) {
         value =
             withContext(Dispatchers.IO) {
@@ -248,6 +252,14 @@ private fun ToolsSection(container: AppContainer) {
     val resetDone = stringResource(R.string.tools_reset_done)
     val updated = stringResource(R.string.tools_updated)
     val updateFailed = stringResource(R.string.tools_update_failed)
+    val restartLater = stringResource(R.string.tools_restart_after_downloads)
+
+    // Restarting would cut a running download short, and nothing resumes the queue on launch.
+    fun applied(text: String) = if (container.downloads.hasPending) {
+        ToolsResult(text + "\n\n" + restartLater, restart = false)
+    } else {
+        ToolsResult(text, restart = true)
+    }
     Section(stringResource(R.string.settings_tools), Icons.Outlined.Build) {
         val current = versions
         if (current == null) {
@@ -271,7 +283,7 @@ private fun ToolsSection(container: AppContainer) {
                 enabled = !updating,
                 onClick = {
                     container.python.resetTools()
-                    result = resetDone
+                    result = applied(resetDone)
                 }
             ) { Text(stringResource(R.string.tools_reset)) }
             FilledTonalButton(
@@ -282,9 +294,12 @@ private fun ToolsSection(container: AppContainer) {
                         val outcome = withContext(Dispatchers.IO) { container.python.updateTools() }
                         updating = false
                         result = if (outcome.status == "ok") {
-                            updated + "\n\n" + outcome.message.takeLast(600)
+                            applied(updated + "\n\n" + outcome.message.takeLast(600))
                         } else {
-                            updateFailed + "\n\n" + outcome.message.takeLast(1200)
+                            ToolsResult(
+                                updateFailed + "\n\n" + outcome.message.takeLast(1200),
+                                restart = false
+                            )
                         }
                         refresh++
                     }
@@ -292,16 +307,32 @@ private fun ToolsSection(container: AppContainer) {
             ) { Text(stringResource(R.string.tools_update)) }
         }
     }
-    result?.let { text ->
+    result?.let { shown ->
+        val context = LocalContext.current
         AlertDialog(
             onDismissRequest = { result = null },
             confirmButton = {
-                TextButton(onClick = { result = null }) { Text(stringResource(R.string.ok)) }
+                if (shown.restart) {
+                    TextButton(onClick = { restartApp(context) }) {
+                        Text(stringResource(R.string.tools_restart))
+                    }
+                } else {
+                    TextButton(onClick = { result = null }) { Text(stringResource(R.string.ok)) }
+                }
+            },
+            dismissButton = if (shown.restart) {
+                {
+                    TextButton(onClick = { result = null }) {
+                        Text(stringResource(R.string.tools_later))
+                    }
+                }
+            } else {
+                null
             },
             title = { Text(stringResource(R.string.tools_update_title)) },
             text = {
                 Text(
-                    text,
+                    shown.text,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Monospace
                     )
@@ -309,6 +340,16 @@ private fun ToolsSection(container: AppContainer) {
             }
         )
     }
+}
+
+/** What the tools dialog says, and whether it offers to restart for the change to apply. */
+private data class ToolsResult(val text: String, val restart: Boolean)
+
+/** Starts the app over in a new process, which is the only way Python picks up other tools. */
+private fun restartApp(context: Context) {
+    val intent = Intent.makeRestartActivityTask(ComponentName(context, MainActivity::class.java))
+    context.startActivity(intent)
+    Runtime.getRuntime().exit(0)
 }
 
 @Composable
