@@ -53,6 +53,7 @@
     <string name="paste">Paste</string>
     <string name="clear">Clear</string>
     <string name="tool">Tool</string>
+    <string name="type">Type</string>
     <string name="format">Format</string>
     <string name="quality">Quality</string>
     <string name="quality_best">Best</string>

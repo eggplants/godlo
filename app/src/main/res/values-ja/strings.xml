@@ -50,6 +50,7 @@
     <string name="paste">貼り付け</string>
     <string name="clear">クリア</string>
     <string name="tool">ツール</string>
+    <string name="type">種類</string>
     <string name="format">形式</string>
     <string name="quality">画質</string>
     <string name="quality_best">最高</string>

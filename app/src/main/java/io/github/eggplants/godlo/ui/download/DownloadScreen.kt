@@ -52,6 +52,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -349,6 +350,34 @@ private fun DownloadFormCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
+                    stringResource(R.string.type),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.width(56.dp)
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
+                    val kinds = listOf(MediaKind.VIDEO, MediaKind.AUDIO, MediaKind.IMAGE)
+                    kinds.forEachIndexed { index, kind ->
+                        SegmentedButton(
+                            selected = form.kind == kind,
+                            onClick = { vm.setKind(kind) },
+                            shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
+                            // As tall as the tool chips beside it.
+                            modifier = Modifier.height(FilterChipDefaults.Height),
+                            icon = {
+                                SegmentedButtonDefaults.Icon(form.kind == kind) {
+                                    Icon(kind.icon(), null, Modifier.size(18.dp))
+                                }
+                            }
+                        ) { Text(stringResource(kind.label), maxLines = 1) }
+                    }
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
                     stringResource(R.string.tool),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.width(56.dp)
@@ -371,22 +400,6 @@ private fun DownloadFormCard(
                             strokeWidth = 2.dp
                         )
                     }
-                }
-            }
-
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                val kinds = listOf(MediaKind.VIDEO, MediaKind.AUDIO, MediaKind.IMAGE)
-                kinds.forEachIndexed { index, kind ->
-                    SegmentedButton(
-                        selected = form.kind == kind,
-                        onClick = { vm.setKind(kind) },
-                        shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
-                        icon = {
-                            SegmentedButtonDefaults.Icon(form.kind == kind) {
-                                Icon(kind.icon(), null, Modifier.size(18.dp))
-                            }
-                        }
-                    ) { Text(stringResource(kind.label)) }
                 }
             }
 
