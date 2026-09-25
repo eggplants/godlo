@@ -162,8 +162,7 @@
     <string name="tools_restart">再起動</string>
     <string name="tools_later">あとで</string>
     <string name="tools_restart_after_downloads">ダウンロード中です。終わってからアプリを再起動してください。</string>
-    <string name="root_dialog_title">%1$s の保存先</string>
-    <string name="root_dialog_hint">この下に {サイト}/ を作って保存します</string>
+    <string name="root_unsupported">このフォルダは使えません。端末のストレージにあるフォルダを選んでください。</string>
     <string name="reset_default">既定に戻す</string>
 
     <!-- ツールの設定ファイル -->

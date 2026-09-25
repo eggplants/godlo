@@ -3,7 +3,13 @@ package io.github.eggplants.godlo.ui.settings
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.DocumentsContract
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HighQuality
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,11 +37,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -70,12 +77,14 @@ import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.ConfigFile
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.EpisodeRange
+import io.github.eggplants.godlo.core.FolderPath
 import io.github.eggplants.godlo.core.ReadingDirection
 import io.github.eggplants.godlo.core.SpreadMode
 import io.github.eggplants.godlo.core.Storage
 import io.github.eggplants.godlo.core.ThemeMode
 import io.github.eggplants.godlo.ui.download.AUDIO_FORMATS
 import io.github.eggplants.godlo.ui.download.videoQualities
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -94,7 +103,25 @@ fun SettingsScreen(
         scope.launch { container.settings.update(transform) }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var editingRoot by remember { mutableStateOf<Engine?>(null) }
+    val context = LocalContext.current
+    var choosingRoot by remember { mutableStateOf<Engine?>(null) }
+    val chooseRoot = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        val engine = choosingRoot ?: return@rememberLauncherForActivityResult
+        choosingRoot = null
+        if (uri == null) return@rememberLauncherForActivityResult
+        val root = FolderPath.toPath(
+            uri.authority.orEmpty(),
+            DocumentsContract.getTreeDocumentId(uri),
+            Environment.getExternalStorageDirectory().absolutePath
+        )
+        if (root == null) {
+            Toast.makeText(context, R.string.root_unsupported, Toast.LENGTH_LONG).show()
+        } else {
+            update { it.copy(roots = it.roots + (engine to root)) }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -114,13 +141,29 @@ fun SettingsScreen(
         ) {
             Section(stringResource(R.string.settings_save_location), Icons.Outlined.Folder) {
                 for (engine in Engine.entries) {
+                    val root = settings.root(engine)
+                    val default = Storage.defaultRoot(engine)
                     SettingItem(
                         title = engine.id,
-                        summary = stringResource(
-                            R.string.settings_root_summary,
-                            settings.root(engine)
-                        ),
-                        onClick = { editingRoot = engine }
+                        summary = stringResource(R.string.settings_root_summary, root),
+                        trailing = if (root == default) {
+                            null
+                        } else {
+                            {
+                                IconButton(onClick = {
+                                    update { it.copy(roots = it.roots + (engine to default)) }
+                                }) {
+                                    Icon(
+                                        Icons.Outlined.Restore,
+                                        stringResource(R.string.reset_default)
+                                    )
+                                }
+                            }
+                        },
+                        onClick = {
+                            choosingRoot = engine
+                            chooseRoot.launch(initialFolder(root))
+                        }
                     )
                 }
             }
@@ -230,17 +273,15 @@ fun SettingsScreen(
             AboutSection(onOpenAndroidLicenses, onOpenPythonLicenses)
         }
     }
+}
 
-    editingRoot?.let { engine ->
-        RootDialog(
-            engine = engine,
-            current = settings.root(engine),
-            onDismiss = { editingRoot = null },
-            onSave = { root ->
-                update { it.copy(roots = it.roots + (engine to root.trimEnd('/'))) }
-            }
-        )
-    }
+/** Where the folder picker opens for [root]: the nearest folder of it that exists. */
+private fun initialFolder(root: String): Uri? {
+    val primary = Environment.getExternalStorageDirectory().absolutePath
+    val existing = generateSequence(File(root)) { it.parentFile }
+        .firstOrNull { it.isDirectory } ?: return null
+    val id = FolderPath.toDocumentId(existing.path, primary) ?: return null
+    return DocumentsContract.buildDocumentUri(FolderPath.EXTERNAL_STORAGE, id)
 }
 
 @Composable
@@ -362,47 +403,6 @@ private fun restartApp(context: Context) {
 }
 
 @Composable
-private fun RootDialog(
-    engine: Engine,
-    current: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit
-) {
-    var value by remember { mutableStateOf(current) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.root_dialog_title, engine.id)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = value, onValueChange = {
-                    value = it
-                }, singleLine = false, modifier = Modifier.fillMaxWidth())
-                Text(
-                    stringResource(R.string.root_dialog_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                TextButton(onClick = {
-                    value = Storage.defaultRoot(engine)
-                }) { Text(stringResource(R.string.reset_default)) }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = value.startsWith("/"),
-                onClick = {
-                    onSave(value)
-                    onDismiss()
-                }
-            ) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
-    )
-}
-
-@Composable
 private fun Section(title: String, icon: ImageVector, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -475,10 +475,16 @@ private fun AboutSection(onOpenAndroidLicenses: () -> Unit, onOpenPythonLicenses
 }
 
 @Composable
-private fun SettingItem(title: String, summary: String, onClick: (() -> Unit)? = null) {
+private fun SettingItem(
+    title: String,
+    summary: String,
+    trailing: (@Composable () -> Unit)? = null,
+    onClick: (() -> Unit)? = null
+) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(summary) },
+        trailingContent = trailing,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = if (onClick != null) Modifier.clickableRow(onClick) else Modifier
     )

@@ -167,8 +167,7 @@
     <string name="tools_restart">Restart</string>
     <string name="tools_later">Later</string>
     <string name="tools_restart_after_downloads">Downloads are in progress. Restart the app once they finish.</string>
-    <string name="root_dialog_title">Save location for %1$s</string>
-    <string name="root_dialog_hint">A {site}/ folder is made inside it for each site.</string>
+    <string name="root_unsupported">This folder cannot be used. Choose one on the device’s storage.</string>
     <string name="reset_default">Reset to default</string>
 
     <!-- Tool config files -->
