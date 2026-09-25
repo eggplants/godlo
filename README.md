@@ -14,6 +14,16 @@
   <https://github.com/eggplants/godlo/releases/latest>
 )
 
+<!--
+[<img
+  src="https://f-droid.org/badge/get-it-on.png"
+  alt="Get it on F-Droid"
+  height="80" />
+](
+  <https://f-droid.org/packages/io.github.eggplants.godlo>
+)
+-->
+
 An Android app that runs [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 [gallery-dl](https://github.com/mikf/gallery-dl) and
 [getjmanga](https://pypi.org/project/getjmanga/) on the device, and lets you browse, read,
