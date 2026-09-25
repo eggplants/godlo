@@ -18,6 +18,7 @@ import io.github.eggplants.godlo.player.AudioPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,9 @@ class AppContainer(context: Context) {
 
     /** A URL shared into the app, waiting for the download screen to pick it up. */
     val sharedUrl = MutableStateFlow<String?>(null)
+
+    /** Each time a URL is shared in, for the app to show the download screen. */
+    val shares = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 }
 
 class GodloApp :

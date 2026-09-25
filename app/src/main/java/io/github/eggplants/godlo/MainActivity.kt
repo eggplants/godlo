@@ -1,7 +1,6 @@
 package io.github.eggplants.godlo
 
 import android.app.PictureInPictureParams
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -45,7 +44,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        handle(intent)
         container.audio.connect()
         setContent {
             val settings by container.settings.state.collectAsStateWithLifecycle()
@@ -53,11 +51,6 @@ class MainActivity : AppCompatActivity() {
                 GodloRoot(container)
             }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handle(intent)
     }
 
     override fun onResume() {
@@ -70,20 +63,5 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         // Before Android 12, picture-in-picture has to be entered by hand on the way out.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) enterPictureInPicture()
-    }
-
-    /** A URL shared from a browser or an app, or opened with Godlo, goes to the download screen. */
-    private fun handle(intent: Intent?) {
-        val text = when (intent?.action) {
-            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
-            Intent.ACTION_VIEW -> intent.dataString
-            else -> null
-        } ?: return
-        val url = URL_PATTERN.find(text)?.value ?: return
-        container.sharedUrl.value = url
-    }
-
-    private companion object {
-        val URL_PATTERN = Regex("https?://\\S+")
     }
 }

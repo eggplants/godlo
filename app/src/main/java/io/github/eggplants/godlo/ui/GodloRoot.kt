@@ -115,10 +115,11 @@ fun GodloRoot(container: AppContainer) {
     val tasks by container.downloads.tasks.collectAsStateWithLifecycle()
     val active = tasks.count { it.state == TaskState.QUEUED || it.state == TaskState.RUNNING }
     val nowPlaying by container.audio.state.collectAsStateWithLifecycle()
-    val sharedUrl by container.sharedUrl.collectAsStateWithLifecycle()
 
-    LaunchedEffect(sharedUrl) {
-        if (sharedUrl != null && current != TopLevel.DOWNLOADS) {
+    // To the download screen for each link shared in. Not keyed on the link itself: the
+    // download screen's view model, alive on another tab too, takes it straight away.
+    LaunchedEffect(nav) {
+        container.shares.collect {
             nav.navigate(DownloadsRoute) {
                 popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
