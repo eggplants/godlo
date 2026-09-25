@@ -8,8 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Update
-import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,8 +23,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,7 +61,7 @@ fun PatrolScreen(container: AppContainer, onBack: () -> Unit, onStarted: () -> U
                             onStarted()
                         },
                         enabled = works.isNotEmpty() && tasks.none { it.patrol && !it.finished }
-                    ) { Icon(Icons.Filled.Update, stringResource(R.string.patrol_run)) }
+                    ) { Icon(Icons.Filled.PlayArrow, stringResource(R.string.patrol_run)) }
                 },
                 scrollBehavior = scrollBehavior
             )
@@ -68,7 +69,7 @@ fun PatrolScreen(container: AppContainer, onBack: () -> Unit, onStarted: () -> U
     ) { padding ->
         if (works.isEmpty()) {
             EmptyState(
-                Icons.Outlined.Update,
+                ImageVector.vectorResource(R.drawable.ic_patrol),
                 stringResource(R.string.patrol_empty_title),
                 stringResource(R.string.patrol_empty_body),
                 Modifier.padding(padding)
