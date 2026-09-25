@@ -145,7 +145,6 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
         }
     val notificationPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    val patrolWorks by container.patrol.works.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -154,18 +153,6 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
             TopAppBar(
                 title = { Text("Godlo") },
                 actions = {
-                    if (patrolWorks.isNotEmpty()) {
-                        IconButton(
-                            onClick = container.patrol::start,
-                            // One patrol at a time: another would only go over the same works.
-                            enabled = tasks.none { it.patrol && !it.finished }
-                        ) {
-                            Icon(
-                                Icons.Filled.Update,
-                                contentDescription = stringResource(R.string.patrol_run)
-                            )
-                        }
-                    }
                     if (tasks.any { it.finished }) {
                         IconButton(onClick = { confirmingClear = true }) {
                             Icon(
