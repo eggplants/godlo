@@ -1,4 +1,4 @@
-# Godlo
+# <img src="fastlane/metadata/android/en-US/images/icon.png" alt="logo" width="48" align="top"> <ins>Godlo</ins>
 
 [![ci](https://github.com/eggplants/godlo/actions/workflows/ci.yml/badge.svg)](https://github.com/eggplants/godlo/actions/workflows/ci.yml)
 
@@ -6,6 +6,15 @@ An Android app that runs [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 [gallery-dl](https://github.com/mikf/gallery-dl) and
 [getjmanga](https://pypi.org/project/getjmanga/) on the device, and lets you browse, read,
 watch and listen to what they saved.
+
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="Downloads" width="15%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="Image library" width="15%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="Reader" width="15%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="Video player" width="15%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="Audio player" width="15%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="Settings" width="15%">
+</p>
 
 ## Features
 
@@ -62,6 +71,9 @@ gh secret list
 
 # 5. Test in local
 mise run build:release
+
+# 6. Tag
+git tag vX.Y.Z-N -m ... && git push origin vX.Y.Z-N
 ```
 
 ## License
