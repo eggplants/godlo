@@ -20,6 +20,13 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- The name of the app behind a copy destination, e.g. an SMB documents provider. -->
+    <queries>
+        <intent>
+            <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".GodloApp"
         android:allowBackup="true"

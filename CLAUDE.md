@@ -77,6 +77,8 @@ Kotlin style comes from `.editorconfig`: `ktlint_code_style = android_studio` wi
   is the foreground service that drains the queue. `Patrol` wraps getjmanga's `[[patrol]]`
   entries in `Download/Godlo/.config/getjmanga.toml`, which getjmanga on a PC reads too.
   `DownloadTarget` maps a finished task to where the library can open it.
+  `FolderCopy` copies a finished task into a folder picked with the system's folder picker that
+  has no file path (e.g. SMB through a documents provider): the tools still save on the device.
 - **`library/`** -- `LibraryRepository` walks the tools' directories; what a file is comes from
   its extension, and a directory with pictures is an album. `LibraryTree` groups items by
   `<site>/<title>/...` for every tab, with `NaturalOrder` for page and episode numbers.

@@ -3,6 +3,8 @@ package io.github.eggplants.godlo.ui.settings
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -116,11 +118,24 @@ fun SettingsScreen(
             DocumentsContract.getTreeDocumentId(uri),
             Environment.getExternalStorageDirectory().absolutePath
         )
-        if (root == null) {
-            Toast.makeText(context, R.string.root_unsupported, Toast.LENGTH_LONG).show()
-        } else {
-            update { it.copy(roots = it.roots + (engine to root)) }
+        val old = settings.copy(engine)
+        if (root != null) {
+            update { it.copy(roots = it.roots + (engine to root), copies = it.copies - engine) }
+            old?.let { releaseFolder(context, it) }
+            return@rememberLauncherForActivityResult
         }
+        // No path the tools could write to, e.g. SMB: download here, then copy there.
+        try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        } catch (_: SecurityException) {
+            Toast.makeText(context, R.string.root_unsupported, Toast.LENGTH_LONG).show()
+            return@rememberLauncherForActivityResult
+        }
+        update { it.copy(copies = it.copies + (engine to uri.toString())) }
+        if (old != null && old != uri.toString()) releaseFolder(context, old)
     }
 
     Scaffold(
@@ -143,15 +158,29 @@ fun SettingsScreen(
                 for (engine in Engine.entries) {
                     val root = settings.root(engine)
                     val default = Storage.defaultRoot(engine)
+                    val copy = settings.copy(engine)
                     SettingItem(
                         title = engine.id,
-                        summary = stringResource(R.string.settings_root_summary, root),
-                        trailing = if (root == default) {
+                        summary = if (copy == null) {
+                            stringResource(R.string.settings_root_summary, root)
+                        } else {
+                            val name by produceState(copy, copy) {
+                                value = withContext(Dispatchers.IO) { folderName(context, copy) }
+                            }
+                            stringResource(R.string.settings_copy_summary, root, name)
+                        },
+                        trailing = if (root == default && copy == null) {
                             null
                         } else {
                             {
                                 IconButton(onClick = {
-                                    update { it.copy(roots = it.roots + (engine to default)) }
+                                    update {
+                                        it.copy(
+                                            roots = it.roots + (engine to default),
+                                            copies = it.copies - engine
+                                        )
+                                    }
+                                    copy?.let { releaseFolder(context, it) }
                                 }) {
                                     Icon(
                                         Icons.Outlined.Restore,
@@ -162,7 +191,9 @@ fun SettingsScreen(
                         },
                         onClick = {
                             choosingRoot = engine
-                            chooseRoot.launch(initialFolder(root))
+                            chooseRoot.launch(
+                                copy?.let(::copyFolder) ?: initialFolder(root)
+                            )
                         }
                     )
                 }
@@ -272,6 +303,40 @@ fun SettingsScreen(
 
             AboutSection(onOpenAndroidLicenses, onOpenPythonLicenses)
         }
+    }
+}
+
+/** The folder picked as a copy destination, as a document the picker can open on. */
+private fun copyFolder(tree: String): Uri {
+    val uri = Uri.parse(tree)
+    return DocumentsContract.buildDocumentUriUsingTree(
+        uri,
+        DocumentsContract.getTreeDocumentId(uri)
+    )
+}
+
+/**
+ * A copy destination for people to read: the provider's name, then the path in its document ID
+ * without the root ID in front, which may be opaque (a UUID for CIFS Documents Provider).
+ */
+private fun folderName(context: Context, tree: String): String {
+    val uri = Uri.parse(tree)
+    val id = DocumentsContract.getTreeDocumentId(uri)
+    val path = (if (':' in id) id.substringAfter(':') else id).trim('/')
+    val provider = runCatching {
+        context.packageManager.resolveContentProvider(uri.authority.orEmpty(), 0)
+            ?.loadLabel(context.packageManager)?.toString()
+    }.getOrNull() ?: uri.authority.orEmpty()
+    return "$provider: $path"
+}
+
+/** Gives up the access kept to a copy destination no longer used. */
+private fun releaseFolder(context: Context, tree: String) {
+    runCatching {
+        context.contentResolver.releasePersistableUriPermission(
+            Uri.parse(tree),
+            FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
+        )
     }
 }
 

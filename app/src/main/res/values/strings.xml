@@ -76,6 +76,8 @@
     <string name="state_done_count">Done (%1$d)</string>
     <string name="state_failed">Failed</string>
     <string name="state_cancelled">Cancelled</string>
+    <string name="copying">Copying to the folder (%1$d/%2$d)</string>
+    <string name="copy_failed">Downloaded, but could not copy it to the folder: %1$s</string>
 
     <!-- Libraries -->
     <string name="up_one_level">Up one level</string>
@@ -133,6 +135,7 @@
     <!-- Settings -->
     <string name="settings_save_location">Save location</string>
     <string name="settings_root_summary">%1$s/{site}/</string>
+    <string name="settings_copy_summary">Saved in %1$s/{site}/, then copied to %2$s/{site}/</string>
     <string name="settings_config_title">Tool config files</string>
     <string name="settings_config_body">Kept in %1$s/, where the tools read them. Tap a file to edit, import or export it.</string>
     <string name="settings_downloads">Downloads</string>
@@ -167,7 +170,7 @@
     <string name="tools_restart">Restart</string>
     <string name="tools_later">Later</string>
     <string name="tools_restart_after_downloads">Downloads are in progress. Restart the app once they finish.</string>
-    <string name="root_unsupported">This folder cannot be used. Choose one on the device’s storage.</string>
+    <string name="root_unsupported">Godlo cannot keep access to this folder.</string>
     <string name="reset_default">Reset to default</string>
 
     <!-- Tool config files -->

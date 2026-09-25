@@ -58,6 +58,11 @@ enum class LibraryLayout(@StringRes val label: Int) {
 data class AppSettings(
     /** Each tool's save directory; `<site>/` directories go inside. */
     val roots: Map<Engine, String> = Engine.entries.associateWith(Storage::defaultRoot),
+    /**
+     * Folders, as tree URIs of the system's folder picker, that each tool's downloads are
+     * copied to once they finish: ones with no file path the tools could write to, e.g. SMB.
+     */
+    val copies: Map<Engine, String> = emptyMap(),
     val videoQuality: String = "1080",
     val audioFormat: String = "mp3",
     val imageFormat: String = "jpg",
@@ -74,6 +79,8 @@ data class AppSettings(
     val videoLayout: LibraryLayout = LibraryLayout.LARGE_GRID
 ) {
     fun root(engine: Engine): String = roots[engine] ?: Storage.defaultRoot(engine)
+
+    fun copy(engine: Engine): String? = copies[engine]?.takeIf { it.isNotEmpty() }
 }
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
@@ -81,6 +88,7 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 class SettingsRepository(private val context: Context) {
     private object Keys {
         fun root(engine: Engine) = stringPreferencesKey("root_${engine.id}")
+        fun copy(engine: Engine) = stringPreferencesKey("copy_${engine.id}")
         val videoQuality = stringPreferencesKey("video_quality")
         val audioFormat = stringPreferencesKey("audio_format")
         val imageFormat = stringPreferencesKey("image_format")
@@ -112,6 +120,7 @@ class SettingsRepository(private val context: Context) {
         val default = AppSettings()
         return AppSettings(
             roots = Engine.entries.associateWith { this[Keys.root(it)] ?: default.root(it) },
+            copies = Engine.entries.mapNotNull { e -> this[Keys.copy(e)]?.let { e to it } }.toMap(),
             videoQuality = this[Keys.videoQuality] ?: default.videoQuality,
             audioFormat = this[Keys.audioFormat] ?: default.audioFormat,
             imageFormat = this[Keys.imageFormat] ?: default.imageFormat,
@@ -131,7 +140,17 @@ class SettingsRepository(private val context: Context) {
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.dataStore.edit { prefs ->
             val next = transform(prefs.toSettings())
-            for (engine in Engine.entries) prefs[Keys.root(engine)] = next.root(engine)
+            for (engine in Engine.entries) {
+                prefs[Keys.root(engine)] = next.root(engine)
+                val copy = next.copy(engine)
+                if (copy ==
+                    null
+                ) {
+                    prefs.remove(Keys.copy(engine))
+                } else {
+                    prefs[Keys.copy(engine)] = copy
+                }
+            }
             prefs[Keys.videoQuality] = next.videoQuality
             prefs[Keys.audioFormat] = next.audioFormat
             prefs[Keys.imageFormat] = next.imageFormat

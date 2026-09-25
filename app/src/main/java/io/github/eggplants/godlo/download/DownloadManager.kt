@@ -2,6 +2,7 @@ package io.github.eggplants.godlo.download
 
 import android.content.Context
 import android.media.MediaScannerConnection
+import android.net.Uri
 import androidx.core.content.ContextCompat
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
@@ -238,17 +239,25 @@ class DownloadManager(
 
         File(root).mkdirs()
         val outcome = python.download(request, callback)
-        val state = when (outcome.status) {
+        var state = when (outcome.status) {
             "ok" -> TaskState.DONE
             "cancelled" -> TaskState.CANCELLED
             else -> TaskState.FAILED
+        }
+        var message = outcome.message
+        val copy = settings.copy(task.engine)
+        if (state == TaskState.DONE && copy != null) {
+            copyError(current(id), File(root), Uri.parse(copy), onUpdate)?.let {
+                state = TaskState.FAILED
+                message = it
+            }
         }
         edit(id) {
             it.copy(
                 state = state,
                 progress = if (state == TaskState.DONE) 1f else it.progress,
                 detail = "",
-                message = outcome.message,
+                message = message,
                 title = it.title.ifBlank { it.url }
             )
         }
@@ -258,6 +267,35 @@ class DownloadManager(
         if (done.files.isNotEmpty()) {
             scan(done.files)
             _completed.tryEmit(done)
+        }
+    }
+
+    /**
+     * Copies what [task] saved under [root] into the folder [tree]; the message to show when
+     * that fails, or null.
+     */
+    private fun copyError(
+        task: DownloadTask,
+        root: File,
+        tree: Uri,
+        onUpdate: (DownloadTask) -> Unit
+    ): String? {
+        val strings = AppLanguage.localize(context)
+        return try {
+            val files = FolderCopy.plan(root, task.files)
+            FolderCopy(context.contentResolver, tree).copy(files) { done, total ->
+                edit(task.id, save = false) {
+                    it.copy(
+                        progress = if (total == 0) 1f else done.toFloat() / total,
+                        detail = strings.getString(R.string.copying, done, total)
+                    )
+                }
+                onUpdate(current(task.id))
+            }
+            null
+        } catch (e: Exception) {
+            // IOException, or SecurityException once the folder's permission is gone.
+            strings.getString(R.string.copy_failed, e.message ?: e.javaClass.simpleName)
         }
     }
 

@@ -73,6 +73,8 @@
     <string name="state_done_count">完了 (%1$d)</string>
     <string name="state_failed">失敗</string>
     <string name="state_cancelled">キャンセル</string>
+    <string name="copying">フォルダにコピー中 (%1$d/%2$d)</string>
+    <string name="copy_failed">ダウンロードしましたが、フォルダへのコピーに失敗しました: %1$s</string>
 
     <!-- ライブラリ -->
     <string name="up_one_level">上の階層へ</string>
@@ -128,6 +130,7 @@
     <!-- 設定 -->
     <string name="settings_save_location">保存先</string>
     <string name="settings_root_summary">%1$s/{サイト}/</string>
+    <string name="settings_copy_summary">%1$s/{サイト}/ に保存し、%2$s/{サイト}/ にコピーします</string>
     <string name="settings_config_title">ツールの設定ファイル</string>
     <string name="settings_config_body">%1$s/ に置かれ、各ツールが読み込みます。タップすると編集・読み込み・書き出しができます。</string>
     <string name="settings_downloads">ダウンロード</string>
@@ -162,7 +165,7 @@
     <string name="tools_restart">再起動</string>
     <string name="tools_later">あとで</string>
     <string name="tools_restart_after_downloads">ダウンロード中です。終わってからアプリを再起動してください。</string>
-    <string name="root_unsupported">このフォルダは使えません。端末のストレージにあるフォルダを選んでください。</string>
+    <string name="root_unsupported">このフォルダへのアクセスを保持できません。</string>
     <string name="reset_default">既定に戻す</string>
 
     <!-- ツールの設定ファイル -->
