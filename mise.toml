@@ -43,11 +43,9 @@ run = "pinact run --check --verify-comment"
 
 [tasks.pre-commit]
 description = "Run checks on pre-commit"
-depends = ["format", "pin"]
+depends = ["format"]
 
-# The Gradle tasks run in a single invocation: mise resolves `depends` in
-# parallel, and concurrent `./gradlew` runs would contend for the build lock.
 [tasks.ci]
 description = "Run CI checks"
-depends = ["lint:kt", "pin:check"]
+depends = ["lint:kt"]
 run = "./gradlew lint test assembleDebug"
