@@ -65,6 +65,11 @@ jobs:
           apk="godlo-${version%-*}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$apk"
           sha256sum "$apk" > "$apk.sha256"
-          gh release create "$TAG" "$apk" "$apk.sha256" --title "$TAG" --generate-notes --verify-tag
+          # R8's mapping, to read the stack traces of this obfuscated build (retrace), gzipped
+          # since it is tens of megabytes.
+          mapping="godlo-${version%-*}-mapping.txt.gz"
+          gzip -9c app/build/outputs/mapping/release/mapping.txt > "$mapping"
+          gh release create "$TAG" "$apk" "$apk.sha256" "$mapping" \
+            --title "$TAG" --generate-notes --verify-tag
       - if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
