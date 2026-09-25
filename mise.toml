@@ -11,6 +11,13 @@ usage = "latest"
 description = "Assemble the debug APK"
 run = "./gradlew assembleDebug"
 
+[tasks."build:release"]
+description = "Assemble the release APK signed with release.jks and the passwords in .env"
+run = '''
+GODLO_KEYSTORE_FILE="$PWD/release.jks" ./gradlew assembleRelease
+'''
+env._.file = ".env"
+
 [tasks.test]
 description = "Run JVM unit tests"
 run = "./gradlew test"

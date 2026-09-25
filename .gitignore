@@ -16,3 +16,8 @@
 .cxx
 local.properties
 __pycache__/
+
+# Release signing secrets and key
+.env
+*.jks
+*.keystore

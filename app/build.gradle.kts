@@ -47,8 +47,23 @@ android {
         }
     }
 
+    // The release key comes from the environment (the release workflow decodes it from secrets).
+    // Without it the release APK is left unsigned.
+    val releaseKeystore = providers.environmentVariable("GODLO_KEYSTORE_FILE").orNull
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = providers.environmentVariable("GODLO_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("GODLO_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("GODLO_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = false
             }

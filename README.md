@@ -40,6 +40,30 @@ mise run lint
 mise run format
 ```
 
+## Build for distribution
+
+```bash
+# 1. Create the key (PKCS12, so the key password is the keystore password):
+keytool -genkeypair -keystore release.jks -alias godlo -keyalg RSA -keysize 4096 -validity 36500
+
+# 2. Fill in GODLO_KEYSTORE_BASE64 and GODLO_KEY_ALIAS:
+cp .env.example .env
+{
+  echo "GODLO_KEYSTORE_BASE64=$(base64 -w0 release.jks)"
+  echo "GODLO_KEY_ALIAS=godlo"
+} >> .env
+
+# 3. Add the two same passwords by hand: GODLO_KEYSTORE_PASSWORD / GODLO_KEY_PASSWORD
+$EDITOR .env
+
+# 4. Send everything to the repository's Actions secrets, and check it:
+gh secret set --env-file .env
+gh secret list
+
+# 5. Test in local
+mise run build:release
+```
+
 ## License
 
 [MIT](LICENSE)
