@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
@@ -174,9 +177,10 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth > maxHeight
             Column(
-                Modifier.fillMaxSize().padding(
+                // Edge to edge: clear of the status bar, and of a three-button navigation bar.
+                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(
                     horizontal = 24.dp
-                ).padding(top = 32.dp, bottom = 24.dp),
+                ).padding(top = 8.dp, bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
