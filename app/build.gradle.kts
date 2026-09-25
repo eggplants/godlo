@@ -11,10 +11,15 @@ plugins {
 // The version comes from the latest `v<versionName>-<versionCode>` tag: v1.2.3-1 builds as
 // versionName 1.2.3 and versionCode 1. Commits past the tag keep its versionCode and get git
 // describe's suffix in the name (1.2.3-4-gabcdef0, -dirty with uncommitted changes); no tag at
-// all is 0.0.0 and 1.
+// all is 0.0.0 and 1. F-Droid edits the checkout before it builds, so its recipe passes
+// -Pgodlo.noDirty to keep the name equal to the tag's.
+val dirtyFlag = if (providers.gradleProperty("godlo.noDirty").isPresent) null else "--dirty"
+
 val gitDescribe: String = runCatching {
     providers.exec {
-        commandLine("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", "--dirty")
+        commandLine(
+            listOfNotNull("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", dirtyFlag)
+        )
         isIgnoreExitValue = true
     }.standardOutput.asText.get().trim()
 }.getOrDefault("")
