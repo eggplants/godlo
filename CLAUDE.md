@@ -22,6 +22,7 @@ list of tasks.
 
 ```bash
 mise run build                         # ./gradlew assembleDebug
+mise run build:release                 # signed release APK from .env and release.jks (.env.example)
 mise run test                          # ./gradlew test (JVM unit tests)
 ./gradlew testDebugUnitTest --tests 'io.github.eggplants.godlo.SharedTextTest'  # a single test class
 mise run format                        # ktlint --format
@@ -99,7 +100,12 @@ generates the license list the app shows for them.
 Bump the code by hand on every tag; Android refuses to update to a lower one. Nothing in the
 repo hard-codes a version, and a checkout without tags builds as `0.0.0` / `1`. CI
 (`.github/workflows/ci.yml`) runs `mise run ci` on pushes to `master`, tags and PRs; it does not
-publish anything. Actions are pinned to full commit SHAs (`mise run pin`).
+publish anything. Pushing a `v<versionName>-<versionCode>` tag also runs
+`.github/workflows/release.yml`, which builds a signed release APK and attaches it to a GitHub
+Release. The key comes from the secrets `GODLO_KEYSTORE_BASE64`, `GODLO_KEYSTORE_PASSWORD`,
+`GODLO_KEY_ALIAS` and `GODLO_KEY_PASSWORD`; locally, a release build is signed only when the
+`GODLO_KEYSTORE_FILE` (and the other `GODLO_*`) environment variables are set. Actions are
+pinned to full commit SHAs (`mise run pin`).
 
 ## Testing conventions
 
