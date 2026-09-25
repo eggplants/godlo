@@ -1,6 +1,18 @@
 # <img src="fastlane/metadata/android/en-US/images/icon.png" alt="logo" width="48" align="top"> <ins>Godlo</ins>
 
-[![ci](https://github.com/eggplants/godlo/actions/workflows/ci.yml/badge.svg)](https://github.com/eggplants/godlo/actions/workflows/ci.yml)
+[![ci](
+  <https://github.com/eggplants/godlo/actions/workflows/ci.yml/badge.svg>
+)](
+  <https://github.com/eggplants/godlo/actions/workflows/ci.yml>
+) [![release](
+  <https://github.com/eggplants/godlo/actions/workflows/release.yml/badge.svg>
+)](
+  <https://github.com/eggplants/godlo/actions/workflows/release.yml>
+) [![GitHub Release](
+  <https://img.shields.io/github/v/release/eggplants/godlo?color=white>
+)](
+  <https://github.com/eggplants/godlo/releases/latest>
+)
 
 An Android app that runs [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 [gallery-dl](https://github.com/mikf/gallery-dl) and
