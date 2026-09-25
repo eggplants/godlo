@@ -1,6 +1,6 @@
 """List the Python packages Chaquopy installed, with their licenses, for the app to show.
 
-The OSS Licenses Gradle Plugin covers the Maven dependencies whose POM names a license. This
+AboutLibraries covers the Maven dependencies whose POM names a license. This
 covers what pip put in the APK, and what neither list names: Python and Chaquopy themselves,
 FFmpeg and QuickJS, and the Maven dependencies whose license only their parent POM gives.
 

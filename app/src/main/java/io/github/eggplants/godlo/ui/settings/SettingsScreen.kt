@@ -1,6 +1,5 @@
 package io.github.eggplants.godlo.ui.settings
 
-import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,7 +59,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.oss.licenses.v2.OssLicensesMenuActivity
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.AppLanguage
@@ -73,8 +70,6 @@ import io.github.eggplants.godlo.core.Storage
 import io.github.eggplants.godlo.core.ThemeMode
 import io.github.eggplants.godlo.ui.download.AUDIO_FORMATS
 import io.github.eggplants.godlo.ui.download.videoQualities
-import io.github.eggplants.godlo.ui.theme.DarkColors
-import io.github.eggplants.godlo.ui.theme.LightColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +79,7 @@ import kotlinx.coroutines.withContext
 fun SettingsScreen(
     container: AppContainer,
     onOpenPatrol: () -> Unit,
+    onOpenAndroidLicenses: () -> Unit,
     onOpenPythonLicenses: () -> Unit
 ) {
     val settings by container.settings.state.collectAsStateWithLifecycle()
@@ -218,7 +214,7 @@ fun SettingsScreen(
 
             ToolsSection(container)
 
-            AboutSection(onOpenPythonLicenses)
+            AboutSection(onOpenAndroidLicenses, onOpenPythonLicenses)
         }
     }
 
@@ -390,14 +386,13 @@ private const val REPOSITORY = "https://github.com/eggplants/godlo"
 private const val SPONSORS = "https://github.com/sponsors/eggplants"
 
 @Composable
-private fun AboutSection(onOpenPythonLicenses: () -> Unit) {
+private fun AboutSection(onOpenAndroidLicenses: () -> Unit, onOpenPythonLicenses: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val version = remember {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         "${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
     }
-    val licensesTitle = stringResource(R.string.about_licenses_android)
     Section(stringResource(R.string.settings_about), Icons.Outlined.Info) {
         SettingItem(
             title = stringResource(R.string.about_repository),
@@ -412,13 +407,8 @@ private fun AboutSection(onOpenPythonLicenses: () -> Unit) {
         )
         SettingItem(
             title = stringResource(R.string.about_licenses),
-            summary = licensesTitle,
-            onClick = {
-                // Its own Compose screen: give it the app's colors rather than its defaults.
-                OssLicensesMenuActivity.setTheme(LightColors, DarkColors, Typography())
-                OssLicensesMenuActivity.setActivityTitle(licensesTitle)
-                context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
-            }
+            summary = stringResource(R.string.about_licenses_android),
+            onClick = onOpenAndroidLicenses
         )
         SettingItem(
             title = stringResource(R.string.about_licenses),

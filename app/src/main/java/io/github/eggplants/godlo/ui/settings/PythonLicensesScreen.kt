@@ -64,7 +64,7 @@ private fun loadLicenses(context: Context): List<PythonLicense> = runCatching {
     }
 }.getOrDefault(emptyList())
 
-/** What the OSS Licenses plugin's list leaves out: the Python packages, bundled programs, ... */
+/** What AboutLibraries' list leaves out: the Python packages, bundled programs, ... */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PythonLicensesScreen(onBack: () -> Unit) {

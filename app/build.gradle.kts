@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.chaquopy)
-    alias(libs.plugins.oss.licenses)
+    alias(libs.plugins.aboutlibraries)
 }
 
 // The version comes from the latest `v<versionName>-<versionCode>` tag: v1.2.3-1 builds as
@@ -168,7 +168,7 @@ chaquopy {
 
 /**
  * Writes python_licenses.json into the APK's assets: what pip installed, with its licenses,
- * which the OSS Licenses plugin does not see. See native/licenses/python_licenses.py.
+ * which AboutLibraries does not see. See native/licenses/python_licenses.py.
  */
 abstract class PythonLicenses : DefaultTask() {
     @get:InputDirectory
@@ -197,6 +197,12 @@ abstract class PythonLicenses : DefaultTask() {
             )
         }
     }
+}
+
+// The license list of the Maven dependencies, for the about screen. Offline, so that the build
+// reads nothing but the POMs and gives the same list every time.
+aboutLibraries {
+    offlineMode = true
 }
 
 androidComponents {
@@ -238,7 +244,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.commons.compress)
     // The license screen for the Maven dependencies; see pythonLicenses below for the rest.
-    implementation(libs.play.services.oss.licenses)
+    implementation(libs.aboutlibraries.compose.m3)
     // Only the prebuilt binaries: ffmpeg, QuickJS (libqjs.so) and the shared libraries ffmpeg
     // links against (inside libpython.zip.so). Godlo unpacks and runs them itself.
     implementation(libs.youtubedl.android.ffmpeg) { isTransitive = false }

@@ -51,6 +51,7 @@ import io.github.eggplants.godlo.ui.player.MiniPlayer
 import io.github.eggplants.godlo.ui.player.NowPlayingScreen
 import io.github.eggplants.godlo.ui.player.VideoPlayerScreen
 import io.github.eggplants.godlo.ui.reader.ReaderScreen
+import io.github.eggplants.godlo.ui.settings.AndroidLicensesScreen
 import io.github.eggplants.godlo.ui.settings.PatrolScreen
 import io.github.eggplants.godlo.ui.settings.PythonLicensesScreen
 import io.github.eggplants.godlo.ui.settings.SettingsScreen
@@ -74,6 +75,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class VideoRoute(val path: String)
 
 @Serializable object NowPlayingRoute
+
+@Serializable object AndroidLicensesRoute
 
 @Serializable object PythonLicensesRoute
 
@@ -223,6 +226,7 @@ fun GodloRoot(container: AppContainer) {
                         SettingsScreen(
                             container,
                             onOpenPatrol = { nav.navigate(PatrolRoute) },
+                            onOpenAndroidLicenses = { nav.navigate(AndroidLicensesRoute) },
                             onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) }
                         )
                     }
@@ -234,6 +238,9 @@ fun GodloRoot(container: AppContainer) {
                                 launchSingleTop = true
                             }
                         })
+                    }
+                    composable<AndroidLicensesRoute> {
+                        AndroidLicensesScreen(onBack = { nav.popBackStack() })
                     }
                     composable<PythonLicensesRoute> {
                         PythonLicensesScreen(onBack = { nav.popBackStack() })
