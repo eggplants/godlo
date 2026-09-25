@@ -2,7 +2,6 @@
 "aqua:azu/dockerfile-pin" = "latest"
 claude = "latest"
 java = "temurin-21"
-# Chaquopy builds the app's Python packages with the same Python minor version it ships.
 python = "3.13"
 ktlint = "latest"
 pinact = "latest"
