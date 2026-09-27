@@ -1,5 +1,6 @@
 package io.github.eggplants.godlo
 
+import io.github.eggplants.godlo.core.LibrarySort
 import io.github.eggplants.godlo.library.Album
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.episodeNumber
@@ -71,7 +72,9 @@ class EpisodeOrderTest {
             }
         assertEquals(
             listOf("プロローグ", "第1話", "第2話"),
-            LibraryTree.albums.children(albums, listOf("example.com", "作品")).map { it.name },
+            LibraryTree.albums
+                .children(albums, listOf("example.com", "作品"), LibrarySort.IMAGES)
+                .map { it.name },
         )
     }
 }

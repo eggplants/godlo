@@ -3,6 +3,8 @@ package io.github.eggplants.godlo.library
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.SettingsRepository
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +31,9 @@ data class Album(
     val cover: File,
     val count: Int,
     val modified: Long,
+    /** The pictures' bytes together. */
+    val size: Long = 0,
+    val created: Long = modified,
     /** The episode's number from getjmanga's `metadata.json`, which orders the episodes. */
     val number: Int? = null,
 ) {
@@ -42,6 +47,7 @@ data class MediaFile(
     val path: List<String>,
     val modified: Long,
     val size: Long,
+    val created: Long = modified,
 ) {
     val title: String
         get() = file.nameWithoutExtension
@@ -126,6 +132,8 @@ class LibraryRepository(settings: SettingsRepository) {
                         cover = images.minWith(NaturalOrder.files),
                         count = images.size,
                         modified = images.maxOf { it.lastModified() },
+                        size = images.sumOf { it.length() },
+                        created = createdAt(dir),
                         number = episodeNumber(dir),
                     )
             }
@@ -144,11 +152,21 @@ class LibraryRepository(settings: SettingsRepository) {
                     path = file.relativeTo(base).invariantSeparatorsPath.split("/"),
                     modified = file.lastModified(),
                     size = file.length(),
+                    created = createdAt(file),
                 )
             }
             .toList()
     }
 }
+
+/**
+ * When [file] was made, where the file system keeps that; the last change where it does not, as
+ * Android then answers.
+ */
+private fun createdAt(file: File): Long = runCatching {
+    Files.readAttributes(file.toPath(), BasicFileAttributes::class.java).creationTime().toMillis()
+}
+    .getOrDefault(file.lastModified())
 
 /** Orders "2.jpg" before "10.jpg", the way a person numbers pages. */
 object NaturalOrder : Comparator<String> {

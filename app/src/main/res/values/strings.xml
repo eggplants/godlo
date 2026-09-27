@@ -39,6 +39,14 @@
     <string name="layout_list">List</string>
     <string name="layout_large_grid">Large grid</string>
     <string name="layout_small_grid">Small grid</string>
+    <string name="sort_button">Sort: %1$s</string>
+    <string name="sort_episode">Episode number</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_size">Size</string>
+    <string name="sort_created">Date created</string>
+    <string name="sort_modified">Date modified</string>
+    <string name="sort_ascending">Ascending</string>
+    <string name="sort_descending">Descending</string>
 
     <!-- Download screen -->
     <string name="clear_history">Clear history</string>

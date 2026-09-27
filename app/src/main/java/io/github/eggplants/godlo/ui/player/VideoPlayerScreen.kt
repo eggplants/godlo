@@ -97,9 +97,11 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
             val videos = container.library.library.value.video
             val folder = videos.firstOrNull { it.file.absolutePath == path }?.path?.dropLast(1)
             val siblings = folder?.let { dir ->
-                LibraryTree.media.children(videos, dir).mapNotNull {
-                    (it as? TreeNode.Leaf)?.item?.file
-                }
+                LibraryTree.media
+                    .children(videos, dir, container.settings.state.value.videoSort)
+                    .mapNotNull {
+                        (it as? TreeNode.Leaf)?.item?.file
+                    }
             }
             val playlist = siblings.orEmpty().ifEmpty { listOf(File(path)) }
             val start = playlist.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0)

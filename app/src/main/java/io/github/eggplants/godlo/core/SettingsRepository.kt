@@ -55,6 +55,26 @@ enum class LibraryLayout(@StringRes val label: Int) {
     SMALL_GRID(R.string.layout_small_grid),
 }
 
+/** What a library screen orders its entries by. */
+enum class SortKey(@StringRes val label: Int) {
+    /** getjmanga's episode numbers from `metadata.json`, else the name; images only. */
+    EPISODE(R.string.sort_episode),
+    NAME(R.string.sort_name),
+    SIZE(R.string.sort_size),
+    CREATED(R.string.sort_created),
+    MODIFIED(R.string.sort_modified),
+}
+
+data class LibrarySort(val key: SortKey, val descending: Boolean) {
+    companion object {
+        /** Episodes in reading order. */
+        val IMAGES = LibrarySort(SortKey.EPISODE, descending = false)
+
+        /** The newest first. */
+        val MEDIA = LibrarySort(SortKey.MODIFIED, descending = true)
+    }
+}
+
 data class AppSettings(
     /** Each tool's save directory; `<site>/` directories go inside. */
     val roots: Map<Engine, String> = Engine.entries.associateWith(Storage::defaultRoot),
@@ -77,6 +97,9 @@ data class AppSettings(
     val imageLayout: LibraryLayout = LibraryLayout.LARGE_GRID,
     val audioLayout: LibraryLayout = LibraryLayout.LIST,
     val videoLayout: LibraryLayout = LibraryLayout.LARGE_GRID,
+    val imageSort: LibrarySort = LibrarySort.IMAGES,
+    val audioSort: LibrarySort = LibrarySort.MEDIA,
+    val videoSort: LibrarySort = LibrarySort.MEDIA,
 ) {
     fun root(engine: Engine): String = roots[engine] ?: Storage.defaultRoot(engine)
 
@@ -104,6 +127,10 @@ class SettingsRepository(private val context: Context) {
         val imageLayout = stringPreferencesKey("image_layout")
         val audioLayout = stringPreferencesKey("audio_layout")
         val videoLayout = stringPreferencesKey("video_layout")
+
+        fun sortKey(tab: String) = stringPreferencesKey("${tab}_sort")
+
+        fun sortDescending(tab: String) = booleanPreferencesKey("${tab}_sort_descending")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -137,8 +164,17 @@ class SettingsRepository(private val context: Context) {
             imageLayout = enumOr(this[Keys.imageLayout], default.imageLayout),
             audioLayout = enumOr(this[Keys.audioLayout], default.audioLayout),
             videoLayout = enumOr(this[Keys.videoLayout], default.videoLayout),
+            imageSort = sort("image", default.imageSort),
+            audioSort = sort("audio", default.audioSort),
+            videoSort = sort("video", default.videoSort),
         )
     }
+
+    private fun Preferences.sort(tab: String, default: LibrarySort) =
+        LibrarySort(
+            enumOr(this[Keys.sortKey(tab)], default.key),
+            this[Keys.sortDescending(tab)] ?: default.descending,
+        )
 
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.dataStore.edit { prefs ->
@@ -165,6 +201,15 @@ class SettingsRepository(private val context: Context) {
             prefs[Keys.imageLayout] = next.imageLayout.name
             prefs[Keys.audioLayout] = next.audioLayout.name
             prefs[Keys.videoLayout] = next.videoLayout.name
+            for ((tab, sort) in
+                listOf(
+                    "image" to next.imageSort,
+                    "audio" to next.audioSort,
+                    "video" to next.videoSort,
+                )) {
+                prefs[Keys.sortKey(tab)] = sort.key.name
+                prefs[Keys.sortDescending(tab)] = sort.descending
+            }
         }
     }
 }

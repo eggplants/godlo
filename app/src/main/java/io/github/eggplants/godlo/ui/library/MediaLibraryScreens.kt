@@ -64,6 +64,7 @@ import coil3.compose.SubcomposeAsyncImage
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.LibraryLayout
+import io.github.eggplants.godlo.core.SortKey
 import io.github.eggplants.godlo.library.AudioArt
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.MediaFile
@@ -71,9 +72,13 @@ import io.github.eggplants.godlo.library.TreeNode
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
+import io.github.eggplants.godlo.ui.components.SortMenuButton
 import io.github.eggplants.godlo.ui.components.formatSize
 import java.io.File
 import kotlinx.coroutines.launch
+
+/** Audio and videos have no episode numbers. */
+private val MEDIA_SORT_KEYS = SortKey.entries - SortKey.EPISODE
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -87,7 +92,7 @@ fun AudioLibraryScreen(container: AppContainer, initialPath: String = "") {
     var pathKey by rememberSaveable { mutableStateOf(initialPath) }
     val path = pathKey.split("/").filter { it.isNotEmpty() }
     var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
-    val nodes = LibraryTree.media.children(library.audio, path)
+    val nodes = LibraryTree.media.children(library.audio, path, settings.audioSort)
     val tracks = nodes.mapNotNull { (it as? TreeNode.Leaf)?.item?.file }
     // Everything inside the folder, for shuffling it.
     val below = library.audio.filter { it.path.size > path.size && it.path.take(path.size) == path }
@@ -119,6 +124,9 @@ fun AudioLibraryScreen(container: AppContainer, initialPath: String = "") {
                     ) {
                         Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle_play))
                     }
+                }
+                SortMenuButton(settings.audioSort, MEDIA_SORT_KEYS) { next ->
+                    scope.launch { container.settings.update { it.copy(audioSort = next) } }
                 }
                 LayoutMenuButton(layout) { next ->
                     scope.launch { container.settings.update { it.copy(audioLayout = next) } }
@@ -282,7 +290,7 @@ fun VideoLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
     var pathKey by rememberSaveable { mutableStateOf(initialPath) }
     val path = pathKey.split("/").filter { it.isNotEmpty() }
     var deleting by remember { mutableStateOf<TreeNode<MediaFile>?>(null) }
-    val nodes = LibraryTree.media.children(library.video, path)
+    val nodes = LibraryTree.media.children(library.video, path, settings.videoSort)
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     fun goUp() {
@@ -303,6 +311,9 @@ fun VideoLibraryScreen(container: AppContainer, initialPath: String = "", onOpen
                 onUp = ::goUp,
                 scrollBehavior = scrollBehavior,
             ) {
+                SortMenuButton(settings.videoSort, MEDIA_SORT_KEYS) { next ->
+                    scope.launch { container.settings.update { it.copy(videoSort = next) } }
+                }
                 LayoutMenuButton(layout) { next ->
                     scope.launch { container.settings.update { it.copy(videoLayout = next) } }
                 }

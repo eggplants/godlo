@@ -87,7 +87,9 @@ bare jar, so it runs through `java -jar` (`vars.ktfmt` in `mise.toml`).
   `<site>/<title>/...` for every tab, with `NaturalOrder` for page and episode numbers.
   getjmanga always runs with `--metadata`; `EpisodeOrder.kt` orders episodes (the image tab and
   the reader's previous / next) by the `number` in each `metadata.json` when every episode of a
-  title has one, and by name otherwise.
+  title has one, and by name otherwise. Each tab's sort menu (`LibrarySort`: episode number,
+  name, size, created or modified, either way) orders folders and items; episode number is the
+  image tab's default and is not offered for audio and video.
 - **`player/`** -- Media3 `PlaybackService` and `AudioPlayer`.
 - **`ui/`** -- Compose screens by feature (`download`, `library`, `reader`, `player`,
   `settings`); `GodloRoot.kt` holds navigation and the top-level tabs.

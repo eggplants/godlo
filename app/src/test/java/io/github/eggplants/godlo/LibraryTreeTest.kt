@@ -1,5 +1,7 @@
 package io.github.eggplants.godlo
 
+import io.github.eggplants.godlo.core.LibrarySort
+import io.github.eggplants.godlo.core.SortKey
 import io.github.eggplants.godlo.library.Album
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.MediaFile
@@ -10,17 +12,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LibraryTreeTest {
-    private fun album(root: String, path: String, modified: Long) =
+    private fun album(root: String, path: String, modified: Long, size: Long = 0) =
         File(root, path).let { dir ->
-            Album(dir, path.split("/"), File(dir, "0.jpg"), count = 10, modified = modified)
+            Album(dir, path.split("/"), File(dir, "0.jpg"), 10, modified, size)
         }
 
     private val albums =
         listOf(
             // getjmanga: <site>/<title>/<episode>
-            album("/d/getjmanga", "takecomic.jp/メイドインアビス/2話", 20),
-            album("/d/getjmanga", "takecomic.jp/メイドインアビス/10話", 30),
-            album("/d/getjmanga", "takecomic.jp/メイドインアビス/1話", 10),
+            album("/d/getjmanga", "takecomic.jp/メイドインアビス/2話", 20, size = 300),
+            album("/d/getjmanga", "takecomic.jp/メイドインアビス/10話", 30, size = 100),
+            album("/d/getjmanga", "takecomic.jp/メイドインアビス/1話", 10, size = 200),
             album("/d/getjmanga", "takecomic.jp/別の漫画/1話", 5),
             album("/d/getjmanga", "shonenjumpplus.com/阿波連さん/第1話", 40),
             // gallery-dl: <site>/<user> holds the pictures itself
@@ -29,8 +31,8 @@ class LibraryTreeTest {
             album("/d/gallery-dl", "takecomic.jp/イラスト", 1),
         )
 
-    private fun names(path: List<String>) =
-        LibraryTree.albums.children(albums, path).map {
+    private fun names(path: List<String>, sort: LibrarySort = LibrarySort.IMAGES) =
+        LibraryTree.albums.children(albums, path, sort).map {
             (if (it is TreeNode.Folder) "folder " else "album ") + it.name
         }
 
@@ -63,7 +65,7 @@ class LibraryTreeTest {
     fun folderSummarisesWhatIsInside() {
         val site =
             LibraryTree.albums
-                .children(albums, emptyList())
+                .children(albums, emptyList(), LibrarySort.IMAGES)
                 .filterIsInstance<TreeNode.Folder<Album>>()
                 .first { it.name == "takecomic.jp" }
         // メイドインアビス, 別の漫画 and イラスト
@@ -88,8 +90,8 @@ class LibraryTreeTest {
             video("nicovideo.jp/clip [e].mp4", 2),
         )
 
-    private fun videoNames(path: List<String>) =
-        LibraryTree.media.children(videos, path).map {
+    private fun videoNames(path: List<String>, sort: LibrarySort = LibrarySort.MEDIA) =
+        LibraryTree.media.children(videos, path, sort).map {
             (if (it is TreeNode.Folder) "folder " else "video ") + it.name
         }
 
@@ -103,10 +105,39 @@ class LibraryTreeTest {
     }
 
     @Test
-    fun playlistKeepsItsOrder() {
+    fun playlistGoesInOrderByName() {
         assertEquals(
             listOf("video 001 first [c].mp4", "video 002 second [d].mp4"),
-            videoNames(listOf("youtube.com", "Some playlist")),
+            videoNames(listOf("youtube.com", "Some playlist"), LibrarySort(SortKey.NAME, false)),
+        )
+    }
+
+    @Test
+    fun episodesSortBySizeEitherWay() {
+        val title = listOf("takecomic.jp", "メイドインアビス")
+        assertEquals(
+            listOf("album 10話", "album 1話", "album 2話"),
+            names(title, LibrarySort(SortKey.SIZE, descending = false)),
+        )
+        assertEquals(
+            listOf("album 2話", "album 1話", "album 10話"),
+            names(title, LibrarySort(SortKey.SIZE, descending = true)),
+        )
+        assertEquals(
+            listOf("album 10話", "album 2話", "album 1話"),
+            names(title, LibrarySort(SortKey.EPISODE, descending = true)),
+        )
+    }
+
+    @Test
+    fun foldersSortByTheSameKeyButStayFirst() {
+        assertEquals(
+            listOf("folder 別の漫画", "folder メイドインアビス", "album イラスト"),
+            names(listOf("takecomic.jp"), LibrarySort(SortKey.MODIFIED, descending = false)),
+        )
+        assertEquals(
+            listOf("folder x.com", "folder takecomic.jp", "folder shonenjumpplus.com"),
+            names(emptyList(), LibrarySort(SortKey.NAME, descending = true)),
         )
     }
 }

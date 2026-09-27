@@ -37,6 +37,14 @@
     <string name="layout_list">リスト</string>
     <string name="layout_large_grid">大きいグリッド</string>
     <string name="layout_small_grid">小さいグリッド</string>
+    <string name="sort_button">並べ替え: %1$s</string>
+    <string name="sort_episode">話番号順</string>
+    <string name="sort_name">名前</string>
+    <string name="sort_size">サイズ</string>
+    <string name="sort_created">作成日</string>
+    <string name="sort_modified">更新日</string>
+    <string name="sort_ascending">昇順</string>
+    <string name="sort_descending">降順</string>
 
     <!-- ダウンロード画面 -->
     <string name="clear_history">履歴を削除</string>

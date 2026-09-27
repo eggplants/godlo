@@ -1,5 +1,7 @@
 package io.github.eggplants.godlo.library
 
+import io.github.eggplants.godlo.core.LibrarySort
+import io.github.eggplants.godlo.core.SortKey
 import java.io.File
 
 /** One entry at a level of a library: a folder to go into, or an item (album, video) to open. */
@@ -21,6 +23,10 @@ sealed interface TreeNode<out T> {
         override val modified: Long,
         /** How many entries going into the folder shows. */
         val entries: Int,
+        /** The items inside together. */
+        val size: Long,
+        /** The oldest item inside. */
+        val created: Long,
         override val dirs: List<File>,
     ) : TreeNode<T> {
         override val name: String
@@ -54,11 +60,16 @@ class LibraryTree<T>(
     /** The item on disk: an album's directory, a video's file. */
     private val fileOf: (T) -> File,
     private val modifiedOf: (T) -> Long,
-    /** How the items of one level are ordered; folders always come first, newest first. */
-    private val itemOrder: (List<T>) -> List<T>,
+    private val createdOf: (T) -> Long,
+    private val sizeOf: (T) -> Long,
+    /** The episode number [SortKey.EPISODE] goes by; null for items that have none. */
+    private val numberOf: (T) -> Int? = { null },
 ) {
-    /** What is directly under [path] (empty for the top level). */
-    fun children(items: List<T>, path: List<String>): List<TreeNode<T>> {
+    /**
+     * What is directly under [path] (empty for the top level): folders first, then items, each in
+     * [sort]'s order.
+     */
+    fun children(items: List<T>, path: List<String>, sort: LibrarySort): List<TreeNode<T>> {
         val below = items.filter {
             pathOf(it).size > path.size && pathOf(it).subList(0, path.size) == path
         }
@@ -74,6 +85,8 @@ class LibraryTree<T>(
                         latest = latest,
                         modified = modifiedOf(latest),
                         entries = inside.map { pathOf(it)[folderPath.size] }.distinct().size,
+                        size = inside.sumOf(sizeOf),
+                        created = inside.minOf(createdOf),
                         dirs =
                             inside
                                 .map {
@@ -82,43 +95,83 @@ class LibraryTree<T>(
                                 .distinct(),
                     )
                 }
-        return folders.sortedByDescending { it.modified } +
-            itemOrder(leaves).map {
+        val folderOrder =
+            when (sort.key) {
+                // Folders have no numbers: the most recently updated first, as before.
+                SortKey.EPISODE -> compareByDescending<TreeNode.Folder<T>> { it.modified }
+                else -> ordered(sort) { it.facts() }
+            }
+        return folders.sortedWith(folderOrder) +
+            sorted(leaves, sort).map {
                 TreeNode.Leaf(it, pathOf(it).last(), modifiedOf(it), fileOf(it))
             }
     }
+
+    /** [items] in [sort]'s order, wherever they are: search results, say. */
+    fun sorted(items: List<T>, sort: LibrarySort): List<T> =
+        if (sort.key == SortKey.EPISODE) {
+            inReadingOrder(items, { pathOf(it).last() }, numberOf).let {
+                if (sort.descending) it.reversed() else it
+            }
+        } else {
+            items.sortedWith(ordered(sort) { it.facts() })
+        }
+
+    private fun T.facts() =
+        Facts(
+            pathOf(this).last(),
+            sizeOf(this),
+            createdOf(this),
+            modifiedOf(this),
+        )
+
+    private fun TreeNode.Folder<T>.facts() = Facts(name, size, created, modified)
 
     private fun File.ancestor(levels: Int): File =
         (1..levels).fold(this) { dir, _ ->
             dir.parentFile!!
         }
 
+    /** What [SortKey]s other than [SortKey.EPISODE] compare. */
+    private data class Facts(
+        val name: String,
+        val size: Long,
+        val created: Long,
+        val modified: Long,
+    )
+
+    private fun <N> ordered(sort: LibrarySort, facts: (N) -> Facts): Comparator<N> {
+        val byName = compareBy(NaturalOrder) { n: N -> facts(n).name }
+        val byKey =
+            when (sort.key) {
+                SortKey.SIZE -> compareBy { n: N -> facts(n).size }.then(byName)
+                SortKey.CREATED -> compareBy { n: N -> facts(n).created }.then(byName)
+                SortKey.MODIFIED -> compareBy { n: N -> facts(n).modified }.then(byName)
+                SortKey.NAME,
+                SortKey.EPISODE -> byName
+            }
+        return if (sort.descending) byKey.reversed() else byKey
+    }
+
     companion object {
-        /** Albums: episodes in reading order, by getjmanga's numbers or else by name. */
         val albums =
             LibraryTree<Album>(
                 pathOf = { it.path },
                 fileOf = { it.dir },
                 modifiedOf = { it.modified },
-                itemOrder = { level -> inReadingOrder(level, { it.title }, { it.number }) },
+                createdOf = { it.created },
+                sizeOf = { it.size },
+                numberOf = { it.number },
             )
 
-        /**
-         * Videos and audio: newest first, except where every name starts with a number, as yt-dlp's
-         * playlist entries do; those keep the playlist's order.
-         */
+        /** Videos and audio. */
         val media =
             LibraryTree<MediaFile>(
                 pathOf = { it.path },
                 fileOf = { it.file },
                 modifiedOf = { it.modified },
-                itemOrder = { level ->
-                    if (level.isNotEmpty() && level.all { it.file.name.first().isDigit() }) {
-                        level.sortedWith(compareBy(NaturalOrder) { it.file.name })
-                    } else {
-                        level.sortedByDescending { it.modified }
-                    }
-                },
+                createdOf = { it.created },
+                sizeOf = { it.size },
             )
     }
 }

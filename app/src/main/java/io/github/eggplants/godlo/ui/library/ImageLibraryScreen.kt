@@ -62,6 +62,7 @@ import coil3.compose.AsyncImage
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.LibraryLayout
+import io.github.eggplants.godlo.core.SortKey
 import io.github.eggplants.godlo.library.Album
 import io.github.eggplants.godlo.library.LibraryTree
 import io.github.eggplants.godlo.library.TreeNode
@@ -69,6 +70,7 @@ import io.github.eggplants.godlo.library.cover
 import io.github.eggplants.godlo.ui.components.ConfirmDeleteDialog
 import io.github.eggplants.godlo.ui.components.EmptyState
 import io.github.eggplants.godlo.ui.components.LayoutMenuButton
+import io.github.eggplants.godlo.ui.components.SortMenuButton
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -81,6 +83,7 @@ fun ImageLibraryScreen(
     onOpenPatrol: () -> Unit,
 ) {
     val library by container.library.library.collectAsStateWithLifecycle()
+    val settings by container.settings.state.collectAsStateWithLifecycle()
     // The folder being looked at, e.g. "takecomic.jp/メイドインアビス"; empty for the sites.
     var pathKey by rememberSaveable { mutableStateOf(initialPath) }
     val path = pathKey.split("/").filter { it.isNotEmpty() }
@@ -90,13 +93,17 @@ fun ImageLibraryScreen(
     val searchResults = query.isNotBlank()
     val nodes =
         if (searchResults) {
-            library.albums
-                .filter { it.path.any { name -> name.contains(query, ignoreCase = true) } }
+            LibraryTree.albums
+                .sorted(
+                    library.albums.filter {
+                        it.path.any { name -> name.contains(query, ignoreCase = true) }
+                    },
+                    settings.imageSort,
+                )
                 .map { TreeNode.Leaf(it, it.title, it.modified, it.dir) }
         } else {
-            LibraryTree.albums.children(library.albums, path)
+            LibraryTree.albums.children(library.albums, path, settings.imageSort)
         }
-    val settings by container.settings.state.collectAsStateWithLifecycle()
     val layout = settings.imageLayout
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -133,6 +140,9 @@ fun ImageLibraryScreen(
                         ImageVector.vectorResource(R.drawable.ic_patrol),
                         stringResource(R.string.patrol_works),
                     )
+                }
+                SortMenuButton(settings.imageSort, SortKey.entries) { next ->
+                    scope.launch { container.settings.update { it.copy(imageSort = next) } }
                 }
                 LayoutMenuButton(layout) { next ->
                     scope.launch { container.settings.update { it.copy(imageLayout = next) } }
