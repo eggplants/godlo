@@ -24,20 +24,20 @@ fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifie
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             icon,
             contentDescription = null,
             modifier = Modifier.size(56.dp),
-            tint = MaterialTheme.colorScheme.outline
+            tint = MaterialTheme.colorScheme.outline,
         )
         Text(title, style = MaterialTheme.typography.titleMedium)
         Text(
             body,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -49,23 +49,28 @@ fun ConfirmDeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Un
         title = { Text(stringResource(R.string.delete_title)) },
         text = { Text(stringResource(R.string.delete_body, name)) },
         confirmButton = {
-            TextButton(onClick = {
-                onConfirm()
-                onDismiss()
-            }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
+            TextButton(
+                onClick = {
+                    onConfirm()
+                    onDismiss()
+                }
+            ) {
+                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
+        },
     )
 }
 
-fun formatSize(bytes: Long): String = when {
-    bytes >= 1L shl 30 -> "%.1f GB".format(bytes / (1L shl 30).toDouble())
-    bytes >= 1L shl 20 -> "%.1f MB".format(bytes / (1L shl 20).toDouble())
-    bytes >= 1L shl 10 -> "%.0f KB".format(bytes / (1L shl 10).toDouble())
-    else -> "$bytes B"
-}
+fun formatSize(bytes: Long): String =
+    when {
+        bytes >= 1L shl 30 -> "%.1f GB".format(bytes / (1L shl 30).toDouble())
+        bytes >= 1L shl 20 -> "%.1f MB".format(bytes / (1L shl 20).toDouble())
+        bytes >= 1L shl 10 -> "%.0f KB".format(bytes / (1L shl 10).toDouble())
+        else -> "$bytes B"
+    }
 
 fun formatDuration(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)

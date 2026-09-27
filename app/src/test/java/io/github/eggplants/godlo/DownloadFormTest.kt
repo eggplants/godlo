@@ -31,18 +31,20 @@ class DownloadFormTest {
     @Test
     fun switchingKindPicksATool() {
         // An x.com post: pictures with gallery-dl, or the video with yt-dlp.
-        val form = DownloadForm(
-            engine = Engine.GALLERY_DL,
-            kind = MediaKind.IMAGE,
-            supported = listOf(Engine.GALLERY_DL, Engine.YTDLP)
-        )
+        val form =
+            DownloadForm(
+                engine = Engine.GALLERY_DL,
+                kind = MediaKind.IMAGE,
+                supported = listOf(Engine.GALLERY_DL, Engine.YTDLP),
+            )
         assertEquals(Engine.YTDLP, form.engineFor(MediaKind.VIDEO))
         assertEquals(Engine.GALLERY_DL, form.engineFor(MediaKind.IMAGE))
         // A manga site: getjmanga, not the gallery-dl a kind switch would otherwise pick.
-        val manga = DownloadForm(
-            engine = Engine.YTDLP,
-            supported = listOf(Engine.GETJMANGA, Engine.YTDLP)
-        )
+        val manga =
+            DownloadForm(
+                engine = Engine.YTDLP,
+                supported = listOf(Engine.GETJMANGA, Engine.YTDLP),
+            )
         assertEquals(Engine.GETJMANGA, manga.engineFor(MediaKind.IMAGE))
     }
 }

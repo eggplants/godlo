@@ -37,9 +37,7 @@ class AppContainer(context: Context) {
     val shares = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 }
 
-class GodloApp :
-    Application(),
-    SingletonImageLoader.Factory {
+class GodloApp : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
         private set
 
@@ -66,4 +64,5 @@ class GodloApp :
             .build()
 }
 
-val Context.container: AppContainer get() = (applicationContext as GodloApp).container
+val Context.container: AppContainer
+    get() = (applicationContext as GodloApp).container

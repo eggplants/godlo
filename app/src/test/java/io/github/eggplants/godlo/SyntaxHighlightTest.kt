@@ -29,12 +29,12 @@ class SyntaxHighlightTest {
                 "\"n\"" to KEY,
                 "-1.5e3" to NUMBER,
                 "true" to KEYWORD,
-                "null" to KEYWORD
+                "null" to KEYWORD,
             ),
             tokens(
                 """{"extractor": {"skip": "abort:3", "n": [-1.5e3, true, null]}}""",
-                ConfigFormat.JSON
-            )
+                ConfigFormat.JSON,
+            ),
         )
     }
 
@@ -42,13 +42,14 @@ class SyntaxHighlightTest {
     fun jsonStringWithEscapesAndAnOpenOne() {
         assertEquals(
             listOf("\"a\\\"b\"" to STRING, "\"open" to STRING, "1" to NUMBER),
-            tokens("[\"a\\\"b\", \"open\n1]", ConfigFormat.JSON)
+            tokens("[\"a\\\"b\", \"open\n1]", ConfigFormat.JSON),
         )
     }
 
     @Test
     fun toml() {
-        val text = """
+        val text =
+            """
             # comment
             format = "jpg"  # pages
             cbz = false
@@ -62,7 +63,8 @@ class SyntaxHighlightTest {
 
             [[works]]
             n = 0x1F
-        """.trimIndent()
+            """
+                .trimIndent()
         assertEquals(
             listOf(
                 "# comment" to COMMENT,
@@ -83,9 +85,9 @@ class SyntaxHighlightTest {
                 "\"me\"" to STRING,
                 "[[works]]" to SECTION,
                 "n" to KEY,
-                "0x1F" to NUMBER
+                "0x1F" to NUMBER,
             ),
-            tokens(text, ConfigFormat.TOML)
+            tokens(text, ConfigFormat.TOML),
         )
     }
 
@@ -98,9 +100,9 @@ class SyntaxHighlightTest {
                 "user" to KEY,
                 "\"\"\"a\nb\"\"\"" to STRING,
                 "k" to KEY,
-                "1.5" to NUMBER
+                "1.5" to NUMBER,
             ),
-            tokens("site.\"x.com\".user = \"\"\"a\nb\"\"\"\nk = 1.5", ConfigFormat.TOML)
+            tokens("site.\"x.com\".user = \"\"\"a\nb\"\"\"\nk = 1.5", ConfigFormat.TOML),
         )
     }
 
@@ -112,17 +114,18 @@ class SyntaxHighlightTest {
                 "--embed-subs" to OPTION,
                 "-f" to OPTION,
                 "\"bv*+ba\"" to STRING,
-                "--sub-langs" to OPTION
+                "--sub-langs" to OPTION,
             ),
-            tokens("# subs\n--embed-subs\n-f \"bv*+ba\" --sub-langs=ja,en", ConfigFormat.ARGS)
+            tokens("# subs\n--embed-subs\n-f \"bv*+ba\" --sub-langs=ja,en", ConfigFormat.ARGS),
         )
     }
 
     @Test
     fun cookies() {
-        val text = "# Netscape HTTP Cookie File\n" +
-            ".example.com\tTRUE\t/\tFALSE\t0\tname\tvalue\n" +
-            "#HttpOnly_.x.com\tFALSE\t/\tTRUE\t1700000000\tsid\tabc"
+        val text =
+            "# Netscape HTTP Cookie File\n" +
+                ".example.com\tTRUE\t/\tFALSE\t0\tname\tvalue\n" +
+                "#HttpOnly_.x.com\tFALSE\t/\tTRUE\t1700000000\tsid\tabc"
         assertEquals(
             listOf(
                 "# Netscape HTTP Cookie File" to COMMENT,
@@ -137,9 +140,9 @@ class SyntaxHighlightTest {
                 "TRUE" to KEYWORD,
                 "1700000000" to NUMBER,
                 "sid" to KEY,
-                "abc" to STRING
+                "abc" to STRING,
             ),
-            tokens(text, ConfigFormat.COOKIES)
+            tokens(text, ConfigFormat.COOKIES),
         )
     }
 

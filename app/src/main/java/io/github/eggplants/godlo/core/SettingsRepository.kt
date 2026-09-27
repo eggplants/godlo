@@ -20,21 +20,21 @@ import kotlinx.coroutines.flow.stateIn
 enum class ThemeMode(@StringRes val label: Int) {
     SYSTEM(R.string.theme_system),
     LIGHT(R.string.theme_light),
-    DARK(R.string.theme_dark)
+    DARK(R.string.theme_dark),
 }
 
 /** Which way pages turn. */
 enum class ReadingDirection(@StringRes val label: Int, @StringRes val shortLabel: Int = label) {
     RTL(R.string.direction_rtl, R.string.direction_rtl_short),
     LTR(R.string.direction_ltr),
-    VERTICAL(R.string.direction_vertical)
+    VERTICAL(R.string.direction_vertical),
 }
 
 /** How many pages the reader shows at once. */
 enum class SpreadMode(@StringRes val label: Int, @StringRes val shortLabel: Int = label) {
     AUTO(R.string.spread_auto, R.string.spread_auto_short),
     SINGLE(R.string.spread_single),
-    SPREAD(R.string.spread_spread)
+    SPREAD(R.string.spread_spread),
 }
 
 /** Which episodes a getjmanga download takes besides the one linked. */
@@ -45,22 +45,22 @@ enum class EpisodeRange(@StringRes val label: Int) {
     FOLLOWING(R.string.episodes_following),
 
     /** `--both`: the previous episodes as well as the following ones. */
-    ALL(R.string.episodes_all)
+    ALL(R.string.episodes_all),
 }
 
 /** How a library screen lays out what it lists. */
 enum class LibraryLayout(@StringRes val label: Int) {
     LIST(R.string.layout_list),
     LARGE_GRID(R.string.layout_large_grid),
-    SMALL_GRID(R.string.layout_small_grid)
+    SMALL_GRID(R.string.layout_small_grid),
 }
 
 data class AppSettings(
     /** Each tool's save directory; `<site>/` directories go inside. */
     val roots: Map<Engine, String> = Engine.entries.associateWith(Storage::defaultRoot),
     /**
-     * Folders, as tree URIs of the system's folder picker, that each tool's downloads are
-     * copied to once they finish: ones with no file path the tools could write to, e.g. SMB.
+     * Folders, as tree URIs of the system's folder picker, that each tool's downloads are copied to
+     * once they finish: ones with no file path the tools could write to, e.g. SMB.
      */
     val copies: Map<Engine, String> = emptyMap(),
     val videoQuality: String = "1080",
@@ -76,7 +76,7 @@ data class AppSettings(
     val coverAlone: Boolean = true,
     val imageLayout: LibraryLayout = LibraryLayout.LARGE_GRID,
     val audioLayout: LibraryLayout = LibraryLayout.LIST,
-    val videoLayout: LibraryLayout = LibraryLayout.LARGE_GRID
+    val videoLayout: LibraryLayout = LibraryLayout.LARGE_GRID,
 ) {
     fun root(engine: Engine): String = roots[engine] ?: Storage.defaultRoot(engine)
 
@@ -88,7 +88,9 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 class SettingsRepository(private val context: Context) {
     private object Keys {
         fun root(engine: Engine) = stringPreferencesKey("root_${engine.id}")
+
         fun copy(engine: Engine) = stringPreferencesKey("copy_${engine.id}")
+
         val videoQuality = stringPreferencesKey("video_quality")
         val audioFormat = stringPreferencesKey("audio_format")
         val imageFormat = stringPreferencesKey("image_format")
@@ -107,14 +109,15 @@ class SettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
 
     /**
-     * The latest settings, read from disk once as the app starts. Screens show what is saved
-     * from their first frame on, instead of the defaults until their own read finishes.
+     * The latest settings, read from disk once as the app starts. Screens show what is saved from
+     * their first frame on, instead of the defaults until their own read finishes.
      */
-    val state: StateFlow<AppSettings> = settings.stateIn(
-        CoroutineScope(SupervisorJob() + Dispatchers.IO),
-        SharingStarted.Eagerly,
-        AppSettings()
-    )
+    val state: StateFlow<AppSettings> =
+        settings.stateIn(
+            CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            SharingStarted.Eagerly,
+            AppSettings(),
+        )
 
     private fun Preferences.toSettings(): AppSettings {
         val default = AppSettings()
@@ -133,7 +136,7 @@ class SettingsRepository(private val context: Context) {
             coverAlone = this[Keys.coverAlone] ?: default.coverAlone,
             imageLayout = enumOr(this[Keys.imageLayout], default.imageLayout),
             audioLayout = enumOr(this[Keys.audioLayout], default.audioLayout),
-            videoLayout = enumOr(this[Keys.videoLayout], default.videoLayout)
+            videoLayout = enumOr(this[Keys.videoLayout], default.videoLayout),
         )
     }
 
@@ -143,9 +146,7 @@ class SettingsRepository(private val context: Context) {
             for (engine in Engine.entries) {
                 prefs[Keys.root(engine)] = next.root(engine)
                 val copy = next.copy(engine)
-                if (copy ==
-                    null
-                ) {
+                if (copy == null) {
                     prefs.remove(Keys.copy(engine))
                 } else {
                     prefs[Keys.copy(engine)] = copy

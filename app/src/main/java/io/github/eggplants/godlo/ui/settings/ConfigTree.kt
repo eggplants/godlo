@@ -25,52 +25,59 @@ enum class ValueType {
     ARRAY,
     NULL;
 
-    val container: Boolean get() = this == OBJECT || this == ARRAY
+    val container: Boolean
+        get() = this == OBJECT || this == ARRAY
 
     /** What a new value of this type starts as. */
-    fun empty(): JsonElement = when (this) {
-        STRING -> JsonPrimitive("")
-        NUMBER -> JsonPrimitive(0)
-        BOOLEAN -> JsonPrimitive(false)
-        OBJECT -> JsonObject(emptyMap())
-        ARRAY -> JsonArray(emptyList())
-        NULL -> JsonNull
-    }
+    fun empty(): JsonElement =
+        when (this) {
+            STRING -> JsonPrimitive("")
+            NUMBER -> JsonPrimitive(0)
+            BOOLEAN -> JsonPrimitive(false)
+            OBJECT -> JsonObject(emptyMap())
+            ARRAY -> JsonArray(emptyList())
+            NULL -> JsonNull
+        }
 }
 
 val JsonElement.valueType: ValueType
-    get() = when (this) {
-        is JsonObject -> ValueType.OBJECT
+    get() =
+        when (this) {
+            is JsonObject -> ValueType.OBJECT
 
-        is JsonArray -> ValueType.ARRAY
+            is JsonArray -> ValueType.ARRAY
 
-        JsonNull -> ValueType.NULL
+            JsonNull -> ValueType.NULL
 
-        is JsonPrimitive -> when {
-            isString -> ValueType.STRING
-            booleanOrNull != null -> ValueType.BOOLEAN
-            else -> ValueType.NUMBER
+            is JsonPrimitive ->
+                when {
+                    isString -> ValueType.STRING
+                    booleanOrNull != null -> ValueType.BOOLEAN
+                    else -> ValueType.NUMBER
+                }
         }
-    }
 
 /**
  * The value [type] holds when written as [text]: null for a number that is not one.
  *
  * Containers start empty; [text] matters only for strings, numbers and booleans.
  */
-fun scalarOf(type: ValueType, text: String): JsonElement? = when (type) {
-    ValueType.STRING -> JsonPrimitive(text)
+fun scalarOf(type: ValueType, text: String): JsonElement? =
+    when (type) {
+        ValueType.STRING -> JsonPrimitive(text)
 
-    ValueType.NUMBER -> text.trim().let {
-        it.toLongOrNull()
-            ?: it.toDoubleOrNull()?.takeIf { d -> d.isFinite() }
+        ValueType.NUMBER ->
+            text
+                .trim()
+                .let {
+                    it.toLongOrNull() ?: it.toDoubleOrNull()?.takeIf { d -> d.isFinite() }
+                }
+                ?.let(::JsonPrimitive)
+
+        ValueType.BOOLEAN -> JsonPrimitive(text == "true")
+
+        else -> type.empty()
     }
-        ?.let(::JsonPrimitive)
-
-    ValueType.BOOLEAN -> JsonPrimitive(text == "true")
-
-    else -> type.empty()
-}
 
 /** What an edit field starts with for a string, number or boolean. */
 val JsonElement.editText: String
@@ -95,9 +102,7 @@ fun JsonElement.update(path: List<PathStep>, transform: (JsonElement) -> JsonEle
             val child = obj[step.name] ?: throw IllegalArgumentException("no ${step.name}")
             JsonObject(
                 obj.mapValues { (key, value) ->
-                    if (key ==
-                        step.name
-                    ) {
+                    if (key == step.name) {
                         child.update(rest, transform)
                     } else {
                         value
@@ -111,9 +116,7 @@ fun JsonElement.update(path: List<PathStep>, transform: (JsonElement) -> JsonEle
             require(step.index in array.indices) { "no [${step.index}]" }
             JsonArray(
                 array.mapIndexed { i, value ->
-                    if (i ==
-                        step.index
-                    ) {
+                    if (i == step.index) {
                         value.update(rest, transform)
                     } else {
                         value
@@ -131,19 +134,19 @@ fun JsonElement.remove(path: List<PathStep>): JsonElement {
         when (val step = path.last()) {
             is PathStep.Key -> JsonObject((parent as JsonObject) - step.name)
 
-            is PathStep.Index -> JsonArray(
-                (parent as JsonArray).filterIndexed { i, _ ->
-                    i !=
-                        step.index
-                }
-            )
+            is PathStep.Index ->
+                JsonArray(
+                    (parent as JsonArray).filterIndexed { i, _ ->
+                        i != step.index
+                    }
+                )
         }
     }
 }
 
 /**
- * This tree with [value] added to the container at [path]: under [key] in an object, keeping
- * the order of the others, and at the end of an array, where [key] is not used.
+ * This tree with [value] added to the container at [path]: under [key] in an object, keeping the
+ * order of the others, and at the end of an array, where [key] is not used.
  *
  * @throws IllegalArgumentException when the object has [key] already.
  */
@@ -174,15 +177,11 @@ fun JsonElement.rename(path: List<PathStep>, name: String): JsonElement {
         require(name !in obj) { name }
         JsonObject(
             obj.entries.associate { (key, value) ->
-                (
-                    if (key ==
-                        old
-                    ) {
-                        name
-                    } else {
-                        key
-                    }
-                    ) to value
+                (if (key == old) {
+                    name
+                } else {
+                    key
+                }) to value
             }
         )
     }

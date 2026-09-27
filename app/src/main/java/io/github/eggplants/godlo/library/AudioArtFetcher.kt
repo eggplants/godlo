@@ -16,20 +16,21 @@ data class AudioArt(val file: File)
 
 class AudioArtFetcher(private val art: AudioArt, private val options: Options) : Fetcher {
     override suspend fun fetch(): FetchResult? {
-        val bytes = MediaMetadataRetriever().run {
-            try {
-                setDataSource(art.file.absolutePath)
-                embeddedPicture
-            } catch (_: RuntimeException) {
-                null
-            } finally {
-                release()
-            }
-        } ?: return null
+        val bytes =
+            MediaMetadataRetriever().run {
+                try {
+                    setDataSource(art.file.absolutePath)
+                    embeddedPicture
+                } catch (_: RuntimeException) {
+                    null
+                } finally {
+                    release()
+                }
+            } ?: return null
         return SourceFetchResult(
             source = ImageSource(Buffer().write(bytes), options.fileSystem),
             mimeType = null,
-            dataSource = DataSource.DISK
+            dataSource = DataSource.DISK,
         )
     }
 

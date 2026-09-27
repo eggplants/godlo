@@ -23,9 +23,10 @@ data class NowPlaying(
     val shuffle: Boolean = false,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
     val hasNext: Boolean = false,
-    val hasPrevious: Boolean = false
+    val hasPrevious: Boolean = false,
 ) {
-    val active: Boolean get() = path != null
+    val active: Boolean
+        get() = path != null
 }
 
 /** The app's handle on [PlaybackService]: a [MediaController], and what it is playing. */
@@ -35,31 +36,38 @@ class AudioPlayer(private val context: Context) {
     private val _state = MutableStateFlow(NowPlaying())
     val state: StateFlow<NowPlaying> = _state.asStateFlow()
 
-    val positionMs: Long get() = controller?.currentPosition ?: 0
+    val positionMs: Long
+        get() = controller?.currentPosition ?: 0
 
-    private val listener = object : Player.Listener {
-        override fun onEvents(player: Player, events: Player.Events) = publish(player)
-    }
+    private val listener =
+        object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) = publish(player)
+        }
 
     private fun withController(action: (MediaController) -> Unit) {
-        controller?.let { return action(it) }
+        controller?.let {
+            return action(it)
+        }
         pending += action
         if (pending.size > 1) return
         val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         val future = MediaController.Builder(context, token).buildAsync()
-        future.addListener({
-            val built =
-                runCatching { future.get() }.getOrNull() ?: return@addListener pending.clear()
-            controller = built
-            built.addListener(listener)
-            publish(built)
-            pending.toList().forEach { it(built) }
-            pending.clear()
-        }, ContextCompat.getMainExecutor(context))
+        future.addListener(
+            {
+                val built =
+                    runCatching { future.get() }.getOrNull() ?: return@addListener pending.clear()
+                controller = built
+                built.addListener(listener)
+                publish(built)
+                pending.toList().forEach { it(built) }
+                pending.clear()
+            },
+            ContextCompat.getMainExecutor(context),
+        )
     }
 
     /** Connects if the service is already playing, so the mini player shows up on launch. */
-    fun connect() = withController { }
+    fun connect() = withController {}
 
     fun play(files: List<File>, index: Int) = withController { c ->
         c.setMediaItems(files.map { it.toMediaItem() }, index, 0)
@@ -78,11 +86,12 @@ class AudioPlayer(private val context: Context) {
     fun toggleShuffle() = withController { it.shuffleModeEnabled = !it.shuffleModeEnabled }
 
     fun cycleRepeat() = withController {
-        it.repeatMode = when (it.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
-        }
+        it.repeatMode =
+            when (it.repeatMode) {
+                Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                else -> Player.REPEAT_MODE_OFF
+            }
     }
 
     fun stop() = withController {
@@ -93,26 +102,25 @@ class AudioPlayer(private val context: Context) {
     private fun publish(player: Player) {
         val item = player.currentMediaItem
         val meta = player.mediaMetadata
-        _state.value = NowPlaying(
-            path = item?.mediaId,
-            // The file's own tags first; its name when it has none.
-            title =
-                meta.title?.toString()
-                    ?: item?.mediaId?.let { File(it).nameWithoutExtension }.orEmpty(),
-            artist = meta.artist?.toString() ?: meta.albumArtist?.toString().orEmpty(),
-            artwork = meta.artworkData,
-            isPlaying = player.isPlaying,
-            durationMs = player.duration.coerceAtLeast(0),
-            shuffle = player.shuffleModeEnabled,
-            repeatMode = player.repeatMode,
-            hasNext = player.hasNextMediaItem(),
-            hasPrevious = player.hasPreviousMediaItem()
-        )
+        _state.value =
+            NowPlaying(
+                path = item?.mediaId,
+                // The file's own tags first; its name when it has none.
+                title =
+                    meta.title?.toString()
+                        ?: item?.mediaId?.let { File(it).nameWithoutExtension }.orEmpty(),
+                artist = meta.artist?.toString() ?: meta.albumArtist?.toString().orEmpty(),
+                artwork = meta.artworkData,
+                isPlaying = player.isPlaying,
+                durationMs = player.duration.coerceAtLeast(0),
+                shuffle = player.shuffleModeEnabled,
+                repeatMode = player.repeatMode,
+                hasNext = player.hasNextMediaItem(),
+                hasPrevious = player.hasPreviousMediaItem(),
+            )
     }
 }
 
 /** No title here: one set on the item would hide the title tag inside the file. */
-fun File.toMediaItem(): MediaItem = MediaItem.Builder()
-    .setMediaId(absolutePath)
-    .setUri(Uri.fromFile(this))
-    .build()
+fun File.toMediaItem(): MediaItem =
+    MediaItem.Builder().setMediaId(absolutePath).setUri(Uri.fromFile(this)).build()

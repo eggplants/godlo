@@ -22,7 +22,7 @@ class ConfigRulesTest {
         assertEquals(Refusal.LOCATION, file.refusal(keys("extractor", "pixiv", "directory")))
         assertEquals(
             Refusal.LOCATION,
-            file.refusal(keys("extractor", "pixiv", "user", "base-directory"))
+            file.refusal(keys("extractor", "pixiv", "user", "base-directory")),
         )
         // A postprocessor's directory is inside the download's own.
         assertNull(file.refusal(keys("postprocessor", "zip", "directory")))
@@ -64,24 +64,25 @@ class ConfigRulesTest {
 
     @Test
     fun refusedInListsEachOnceAndNotWhatIsInside() {
-        val tree = parseConfigJson(
-            """
-            {"subconfigs": [{"directory": 1}],
-             "extractor": {"base-directory": "/x", "pixiv": {"directory": ["a"], "ugoira": true}},
-             "output": {"mode": "terminal", "log": "x"}}
-            """.trimIndent()
-        )
+        val tree =
+            parseConfigJson(
+                """
+                {"subconfigs": [{"directory": 1}],
+                 "extractor": {"base-directory": "/x", "pixiv": {"directory": ["a"], "ugoira": true}},
+                 "output": {"mode": "terminal", "log": "x"}}
+                """
+                    .trimIndent()
+            )
         assertEquals(
             listOf(
                 "subconfigs" to Refusal.UNCHECKED,
                 "extractor.base-directory" to Refusal.LOCATION,
                 "extractor.pixiv.directory" to Refusal.LOCATION,
-                "output.mode" to Refusal.OVERRIDDEN
+                "output.mode" to Refusal.OVERRIDDEN,
             ),
             ConfigFile.GALLERY_DL.refusedIn(tree).map { (path, refusal) ->
-                settingName(path) to
-                    refusal
-            }
+                settingName(path) to refusal
+            },
         )
     }
 
@@ -89,7 +90,7 @@ class ConfigRulesTest {
     fun settingNamesPutIndexesInBrackets() {
         assertEquals(
             "patrol[1].url",
-            settingName(listOf(PathStep.Key("patrol"), PathStep.Index(1), PathStep.Key("url")))
+            settingName(listOf(PathStep.Key("patrol"), PathStep.Index(1), PathStep.Key("url"))),
         )
     }
 }

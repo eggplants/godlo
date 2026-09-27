@@ -11,11 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.eggplants.godlo.core.AppLanguage
-import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.ui.GodloRoot
 import io.github.eggplants.godlo.ui.theme.GodloTheme
 
-/** An AppCompatActivity so that AppCompat can apply the per-app language on Android 12 and older. */
+/**
+ * An AppCompatActivity so that AppCompat can apply the per-app language on Android 12 and older.
+ */
 class MainActivity : AppCompatActivity() {
     /**
      * Set by the video player while a video plays: leaving the app then shrinks the video into

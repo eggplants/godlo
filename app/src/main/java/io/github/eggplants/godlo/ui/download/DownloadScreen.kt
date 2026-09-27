@@ -94,7 +94,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.eggplants.godlo.AppContainer
 import io.github.eggplants.godlo.R
-import io.github.eggplants.godlo.core.AppSettings
 import io.github.eggplants.godlo.core.Engine
 import io.github.eggplants.godlo.core.MediaKind
 import io.github.eggplants.godlo.core.Storage
@@ -106,22 +105,25 @@ import kotlinx.coroutines.launch
 
 /** yt-dlp's height limits, with their labels. */
 @Composable
-fun videoQualities(): List<Pair<String, String>> = listOf(
-    "best" to stringResource(R.string.quality_best),
-    "2160" to "4K",
-    "1440" to "1440p",
-    "1080" to "1080p",
-    "720" to "720p",
-    "480" to "480p",
-    "360" to "360p"
-)
+fun videoQualities(): List<Pair<String, String>> =
+    listOf(
+        "best" to stringResource(R.string.quality_best),
+        "2160" to "4K",
+        "1440" to "1440p",
+        "1080" to "1080p",
+        "720" to "720p",
+        "480" to "480p",
+        "360" to "360p",
+    )
+
 val AUDIO_FORMATS = listOf("mp3" to "MP3", "m4a" to "M4A", "opus" to "Opus", "flac" to "FLAC")
 
-fun MediaKind.icon(): ImageVector = when (this) {
-    MediaKind.IMAGE -> Icons.Filled.Image
-    MediaKind.AUDIO -> Icons.Filled.Audiotrack
-    MediaKind.VIDEO -> Icons.Filled.Movie
-}
+fun MediaKind.icon(): ImageVector =
+    when (this) {
+        MediaKind.IMAGE -> Icons.Filled.Image
+        MediaKind.AUDIO -> Icons.Filled.Audiotrack
+        MediaKind.VIDEO -> Icons.Filled.Movie
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,14 +138,14 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
     var confirmingClear by rememberSaveable { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         hasAccess = Storage.hasAccess(context)
-        onPauseOrDispose { }
+        onPauseOrDispose {}
     }
     val storagePermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             hasAccess = Storage.hasAccess(context)
         }
     val notificationPermission =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -156,34 +158,37 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                         IconButton(onClick = { confirmingClear = true }) {
                             Icon(
                                 Icons.Outlined.DeleteSweep,
-                                contentDescription = stringResource(R.string.clear_history)
+                                contentDescription = stringResource(R.string.clear_history),
                             )
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = padding.calculateTopPadding() + 8.dp,
-                bottom = padding.calculateBottomPadding() + 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = padding.calculateTopPadding() + 8.dp,
+                    bottom = padding.calculateBottomPadding() + 16.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (!hasAccess) {
                 item {
-                    StorageAccessCard(onGrant = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            context.startActivity(Storage.accessSettingsIntent(context))
-                        } else {
-                            storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    StorageAccessCard(
+                        onGrant = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                context.startActivity(Storage.accessSettingsIntent(context))
+                            } else {
+                                storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                            }
                         }
-                    })
+                    )
                 }
             }
             item {
@@ -196,7 +201,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                         vm.submit()
-                    }
+                    },
                 )
             }
             if (tasks.isNotEmpty()) {
@@ -205,7 +210,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                         stringResource(R.string.queue_and_history),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                     )
                 }
             }
@@ -219,7 +224,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                     onCancel = { vm.cancel(task.id) },
                     onRetry = { vm.retry(task.id) },
                     onRemove = { vm.remove(task.id) },
-                    modifier = Modifier.animateItem()
+                    modifier = Modifier.animateItem(),
                 )
             }
         }
@@ -235,18 +240,24 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                 Text(pluralStringResource(R.plurals.clear_history_body, finished, finished))
             },
             confirmButton = {
-                TextButton(onClick = {
-                    vm.clearFinished()
-                    confirmingClear = false
-                }) {
+                TextButton(
+                    onClick = {
+                        vm.clearFinished()
+                        confirmingClear = false
+                    }
+                ) {
                     Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    confirmingClear = false
-                }) { Text(stringResource(R.string.cancel)) }
-            }
+                TextButton(
+                    onClick = {
+                        confirmingClear = false
+                    }
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
         )
     }
 }
@@ -255,29 +266,29 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
 private fun StorageAccessCard(onGrant: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Outlined.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.storage_access_title),
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
             Text(
                 stringResource(R.string.storage_access_body),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
             FilledTonalButton(onClick = onGrant, modifier = Modifier.align(Alignment.End)) {
                 Text(stringResource(R.string.grant))
@@ -292,15 +303,16 @@ private fun DownloadFormCard(
     form: DownloadForm,
     roots: Map<Engine, String>,
     vm: DownloadViewModel,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-        ),
-        modifier = Modifier.fillMaxWidth().animateContentSize()
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            ),
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
@@ -313,47 +325,57 @@ private fun DownloadFormCard(
                 leadingIcon = { Icon(Icons.Filled.Link, contentDescription = null) },
                 trailingIcon = {
                     if (form.url.isEmpty()) {
-                        IconButton(onClick = {
-                            scope.launch {
-                                val text = clipboard.getClipEntry()?.clipData?.takeIf {
-                                    it.itemCount >
-                                        0
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    val text =
+                                        clipboard
+                                            .getClipEntry()
+                                            ?.clipData
+                                            ?.takeIf {
+                                                it.itemCount > 0
+                                            }
+                                            ?.getItemAt(0)
+                                            ?.text
+                                            ?.toString()
+                                    if (text != null) vm.setUrl(text.trim())
                                 }
-                                    ?.getItemAt(0)?.text?.toString()
-                                if (text != null) vm.setUrl(text.trim())
                             }
-                        }) {
+                        ) {
                             Icon(
                                 Icons.Filled.ContentPaste,
-                                contentDescription = stringResource(R.string.paste)
+                                contentDescription = stringResource(R.string.paste),
                             )
                         }
                     } else {
-                        IconButton(onClick = {
-                            vm.setUrl("")
-                        }) {
+                        IconButton(
+                            onClick = {
+                                vm.setUrl("")
+                            }
+                        ) {
                             Icon(
                                 Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.clear)
+                                contentDescription = stringResource(R.string.clear),
                             )
                         }
                     }
                 },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Go
-                ),
-                keyboardActions = KeyboardActions(onGo = { if (form.valid) onSubmit() })
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Go,
+                    ),
+                keyboardActions = KeyboardActions(onGo = { if (form.valid) onSubmit() }),
             )
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     stringResource(R.string.type),
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.width(56.dp)
+                    modifier = Modifier.width(56.dp),
                 )
                 SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
                     val kinds = listOf(MediaKind.VIDEO, MediaKind.AUDIO, MediaKind.IMAGE)
@@ -369,38 +391,40 @@ private fun DownloadFormCard(
                                 SegmentedButtonDefaults.Icon(form.kind == kind) {
                                     Icon(kind.icon(), null, Modifier.size(18.dp))
                                 }
-                            }
-                        ) { Text(stringResource(kind.label), maxLines = 1) }
+                            },
+                        ) {
+                            Text(stringResource(kind.label), maxLines = 1)
+                        }
                     }
                 }
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     stringResource(R.string.tool),
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.width(56.dp)
+                    modifier = Modifier.width(56.dp),
                 )
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Engine.entries.forEach { engine ->
                         FilterChip(
                             selected = form.engine == engine,
                             onClick = { vm.setEngine(engine) },
                             enabled = form.allows(engine),
-                            label = { Text(engine.id) }
+                            label = { Text(engine.id) },
                         )
                     }
                     if (form.detecting) {
                         CircularProgressIndicator(
                             Modifier.size(18.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     }
                 }
@@ -408,42 +432,37 @@ private fun DownloadFormCard(
 
             if (form.engine == Engine.YTDLP) {
                 val options = if (form.kind == MediaKind.AUDIO) AUDIO_FORMATS else videoQualities()
-                val selected = if (form.kind ==
-                    MediaKind.AUDIO
-                ) {
-                    form.audioFormat
-                } else {
-                    form.videoQuality
-                }
+                val selected =
+                    if (form.kind == MediaKind.AUDIO) {
+                        form.audioFormat
+                    } else {
+                        form.videoQuality
+                    }
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        if (form.kind ==
-                            MediaKind.AUDIO
-                        ) {
+                        if (form.kind == MediaKind.AUDIO) {
                             stringResource(R.string.format)
                         } else {
                             stringResource(R.string.quality)
                         },
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.width(56.dp)
+                        modifier = Modifier.width(56.dp),
                     )
                     options.forEach { (value, label) ->
                         FilterChip(
                             selected = selected == value,
                             onClick = {
-                                if (form.kind ==
-                                    MediaKind.AUDIO
-                                ) {
+                                if (form.kind == MediaKind.AUDIO) {
                                     vm.setAudioFormat(value)
                                 } else {
                                     vm.setVideoQuality(value)
                                 }
                             },
-                            label = { Text(label) }
+                            label = { Text(label) },
                         )
                     }
                 }
@@ -458,10 +477,11 @@ private fun DownloadFormCard(
                     trailingContent = {
                         Switch(checked = form.playlist, onCheckedChange = vm::setPlaylist)
                     },
-                    colors = androidx.compose.material3.ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    ),
-                    modifier = Modifier.padding(horizontal = 0.dp)
+                    colors =
+                        androidx.compose.material3.ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                        ),
+                    modifier = Modifier.padding(horizontal = 0.dp),
                 )
             }
             if (form.engine == Engine.GETJMANGA) {
@@ -473,9 +493,10 @@ private fun DownloadFormCard(
                     trailingContent = {
                         Switch(checked = form.store, onCheckedChange = vm::setStore)
                     },
-                    colors = androidx.compose.material3.ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    )
+                    colors =
+                        androidx.compose.material3.ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                        ),
                 )
             }
 
@@ -486,16 +507,17 @@ private fun DownloadFormCard(
                         Icons.Filled.Folder,
                         null,
                         Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         File(roots[engine] ?: Storage.defaultRoot(engine), form.site)
-                            .absolutePath.removePrefix("/storage/emulated/0/") + "/",
+                            .absolutePath
+                            .removePrefix("/storage/emulated/0/") + "/",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.MiddleEllipsis
+                        overflow = TextOverflow.MiddleEllipsis,
                     )
                 }
             }
@@ -503,7 +525,7 @@ private fun DownloadFormCard(
             Button(
                 onClick = onSubmit,
                 enabled = form.valid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp),
             ) {
                 Icon(Icons.Filled.Download, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -522,35 +544,34 @@ private fun TaskCard(
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable(task.id) { mutableStateOf(false) }
     Card(
         onClick = { expanded = !expanded },
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
             Modifier.padding(
-                start = 16.dp,
-                top = 12.dp,
-                end = 8.dp,
-                bottom = 12.dp
-            ).animateContentSize()
+                    start = 16.dp,
+                    top = 12.dp,
+                    end = 8.dp,
+                    bottom = 12.dp,
+                )
+                .animateContentSize()
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    Modifier.size(
-                        40.dp
-                    ).background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center
+                    Modifier.size(40.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         task.kind.icon(),
                         null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
                 Spacer(Modifier.width(12.dp))
@@ -559,42 +580,53 @@ private fun TaskCard(
                         task.title.ifBlank { task.url },
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        listOf(task.site, task.engine.id, stateLabel(task)).filter {
-                            it.isNotBlank()
-                        }.joinToString(" · "),
+                        listOf(task.site, task.engine.id, stateLabel(task))
+                            .filter {
+                                it.isNotBlank()
+                            }
+                            .joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (task.state ==
-                            TaskState.FAILED
-                        ) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                        color =
+                            if (task.state == TaskState.FAILED) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                     )
                 }
                 when (task.state) {
-                    TaskState.QUEUED, TaskState.RUNNING -> IconButton(onClick = onCancel) {
-                        Icon(Icons.Filled.Stop, stringResource(R.string.cancel))
-                    }
+                    TaskState.QUEUED,
+                    TaskState.RUNNING ->
+                        IconButton(onClick = onCancel) {
+                            Icon(Icons.Filled.Stop, stringResource(R.string.cancel))
+                        }
 
-                    TaskState.FAILED, TaskState.CANCELLED -> IconButton(onClick = onRetry) {
-                        Icon(Icons.Filled.Refresh, stringResource(R.string.retry))
-                    }
+                    TaskState.FAILED,
+                    TaskState.CANCELLED ->
+                        IconButton(onClick = onRetry) {
+                            Icon(Icons.Filled.Refresh, stringResource(R.string.retry))
+                        }
 
-                    TaskState.DONE -> if (target != null) {
-                        FilledTonalIconButton(onClick = onOpen) {
-                            when (target) {
-                                is DownloadTarget.Album, is DownloadTarget.ImageFolder ->
-                                    Icon(Icons.Outlined.AutoStories, stringResource(R.string.open))
+                    TaskState.DONE ->
+                        if (target != null) {
+                            FilledTonalIconButton(onClick = onOpen) {
+                                when (target) {
+                                    is DownloadTarget.Album,
+                                    is DownloadTarget.ImageFolder ->
+                                        Icon(
+                                            Icons.Outlined.AutoStories,
+                                            stringResource(R.string.open),
+                                        )
 
-                                is DownloadTarget.Video, is DownloadTarget.Audio ->
-                                    Icon(Icons.Filled.PlayArrow, stringResource(R.string.play))
+                                    is DownloadTarget.Video,
+                                    is DownloadTarget.Audio ->
+                                        Icon(Icons.Filled.PlayArrow, stringResource(R.string.play))
+                                }
                             }
                         }
-                    }
                 }
                 if (task.finished) {
                     IconButton(onClick = onRemove) {
@@ -605,9 +637,12 @@ private fun TaskCard(
             if (task.state == TaskState.RUNNING) {
                 Spacer(Modifier.height(10.dp))
                 if (task.progress >= 0f) {
-                    LinearProgressIndicator(progress = {
-                        task.progress
-                    }, modifier = Modifier.fillMaxWidth().padding(end = 8.dp))
+                    LinearProgressIndicator(
+                        progress = {
+                            task.progress
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                    )
                 } else {
                     LinearProgressIndicator(Modifier.fillMaxWidth().padding(end = 8.dp))
                 }
@@ -616,7 +651,7 @@ private fun TaskCard(
                         task.detail,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }
@@ -627,41 +662,42 @@ private fun TaskCard(
                     color = MaterialTheme.colorScheme.error,
                     maxLines = if (expanded) Int.MAX_VALUE else 3,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 8.dp, end = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp, end = 8.dp),
                 )
             }
             AnimatedVisibility(expanded) {
                 Column(
                     Modifier.padding(top = 8.dp, end = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         task.url,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     task.files.takeLast(5).forEach {
                         Text(
                             "✓ " + File(it).name,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     if (task.log.isNotEmpty()) {
                         Text(
                             task.log.takeLast(30).joinToString("\n"),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace
-                            ),
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    MaterialTheme.shapes.small
-                                )
-                                .padding(8.dp)
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        MaterialTheme.shapes.small,
+                                    )
+                                    .padding(8.dp),
                         )
                     }
                 }
@@ -671,18 +707,20 @@ private fun TaskCard(
 }
 
 @Composable
-private fun stateLabel(task: DownloadTask): String = when (task.state) {
-    TaskState.QUEUED -> stringResource(R.string.state_queued)
+private fun stateLabel(task: DownloadTask): String =
+    when (task.state) {
+        TaskState.QUEUED -> stringResource(R.string.state_queued)
 
-    TaskState.RUNNING -> stringResource(R.string.state_running)
+        TaskState.RUNNING -> stringResource(R.string.state_running)
 
-    TaskState.DONE -> if (task.files.size > 1) {
-        stringResource(R.string.state_done_count, task.files.size)
-    } else {
-        stringResource(R.string.state_done)
+        TaskState.DONE ->
+            if (task.files.size > 1) {
+                stringResource(R.string.state_done_count, task.files.size)
+            } else {
+                stringResource(R.string.state_done)
+            }
+
+        TaskState.FAILED -> stringResource(R.string.state_failed)
+
+        TaskState.CANCELLED -> stringResource(R.string.state_cancelled)
     }
-
-    TaskState.FAILED -> stringResource(R.string.state_failed)
-
-    TaskState.CANCELLED -> stringResource(R.string.state_cancelled)
-}

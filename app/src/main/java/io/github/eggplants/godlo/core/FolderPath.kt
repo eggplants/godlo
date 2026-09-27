@@ -1,8 +1,8 @@
 package io.github.eggplants.godlo.core
 
 /**
- * Between the folders the system's folder picker hands back, as a document ID of a provider,
- * and the plain paths the tools write to. Only folders on the device's own storage have one.
+ * Between the folders the system's folder picker hands back, as a document ID of a provider, and
+ * the plain paths the tools write to. Only folders on the device's own storage have one.
  */
 object FolderPath {
     /** The provider for internal storage and SD cards, with IDs such as `primary:Download/x`. */
@@ -20,19 +20,23 @@ object FolderPath {
             EXTERNAL_STORAGE -> {
                 val volume = documentId.substringBefore(':')
                 val relative = documentId.substringAfter(':', "").trim('/')
-                val root = when (volume) {
-                    "" -> null
-                    "primary" -> primaryRoot
-                    "home" -> "$primaryRoot/Documents"
-                    else -> "/storage/$volume"
-                }
+                val root =
+                    when (volume) {
+                        "" -> null
+                        "primary" -> primaryRoot
+                        "home" -> "$primaryRoot/Documents"
+                        else -> "/storage/$volume"
+                    }
                 root?.let { if (relative.isEmpty()) it else "$it/$relative" }
             }
 
             DOWNLOADS ->
-                documentId.removePrefix("raw:").takeIf {
-                    documentId.startsWith("raw:") && it.startsWith("/")
-                }?.trimEnd('/')
+                documentId
+                    .removePrefix("raw:")
+                    .takeIf {
+                        documentId.startsWith("raw:") && it.startsWith("/")
+                    }
+                    ?.trimEnd('/')
 
             else -> null
         }

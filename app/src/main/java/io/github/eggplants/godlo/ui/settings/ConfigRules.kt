@@ -39,28 +39,30 @@ data class RefusedSetting(val setting: String, val refusal: Refusal)
 fun ConfigFile.refusal(path: List<PathStep>): Refusal? {
     val names = path.map { (it as? PathStep.Key)?.name ?: return null }
     return when (this) {
-        ConfigFile.GALLERY_DL -> when {
-            names == listOf("subconfigs") -> Refusal.UNCHECKED
+        ConfigFile.GALLERY_DL ->
+            when {
+                names == listOf("subconfigs") -> Refusal.UNCHECKED
 
-            names == listOf("output", "mode") || names == listOf("output", "progress") ->
-                Refusal.OVERRIDDEN
+                names == listOf("output", "mode") || names == listOf("output", "progress") ->
+                    Refusal.OVERRIDDEN
 
-            // At the top, and in extractor down to a category's subcategory: gallery-dl reads
-            // these there, and one set for a category would win over the app's.
-            names.last() in GALLERY_DL_LOCATION &&
-                (names.size == 1 || (names.first() == "extractor" && names.size in 2..4)) ->
-                Refusal.LOCATION
+                // At the top, and in extractor down to a category's subcategory: gallery-dl reads
+                // these there, and one set for a category would win over the app's.
+                names.last() in GALLERY_DL_LOCATION &&
+                    (names.size == 1 || (names.first() == "extractor" && names.size in 2..4)) ->
+                    Refusal.LOCATION
 
-            else -> null
-        }
+                else -> null
+            }
 
         // getjmanga is run with -d, -F, --cbz / --no-cbz and one of --bulk, --no-bulk, --both.
-        ConfigFile.GETJMANGA -> when {
-            names.size != 1 -> null
-            names[0] == "savedir" -> Refusal.LOCATION
-            names[0] in GETJMANGA_OVERRIDDEN -> Refusal.OVERRIDDEN
-            else -> null
-        }
+        ConfigFile.GETJMANGA ->
+            when {
+                names.size != 1 -> null
+                names[0] == "savedir" -> Refusal.LOCATION
+                names[0] in GETJMANGA_OVERRIDDEN -> Refusal.OVERRIDDEN
+                else -> null
+            }
 
         else -> null
     }
@@ -70,11 +72,12 @@ fun ConfigFile.refusal(path: List<PathStep>): Refusal? {
 fun ConfigFile.refusedIn(tree: JsonElement): List<Pair<List<PathStep>, Refusal>> {
     val found = mutableListOf<Pair<List<PathStep>, Refusal>>()
     fun walk(node: JsonElement, path: List<PathStep>) {
-        val children = when (node) {
-            is JsonObject -> node.map { (key, value) -> PathStep.Key(key) to value }
-            is JsonArray -> node.mapIndexed { i, value -> PathStep.Index(i) to value }
-            else -> return
-        }
+        val children =
+            when (node) {
+                is JsonObject -> node.map { (key, value) -> PathStep.Key(key) to value }
+                is JsonArray -> node.mapIndexed { i, value -> PathStep.Index(i) to value }
+                else -> return
+            }
         for ((step, child) in children) {
             val here = path + step
             val refused = refusal(here)
@@ -87,12 +90,15 @@ fun ConfigFile.refusedIn(tree: JsonElement): List<Pair<List<PathStep>, Refusal>>
 }
 
 /** [path] as a dotted name, the way the files' documentation writes settings. */
-fun settingName(path: List<PathStep>): String = path.joinToString(".") {
-    when (it) {
-        is PathStep.Key -> it.name
-        is PathStep.Index -> "[${it.index}]"
-    }
-}.replace(".[", "[")
+fun settingName(path: List<PathStep>): String =
+    path
+        .joinToString(".") {
+            when (it) {
+                is PathStep.Key -> it.name
+                is PathStep.Index -> "[${it.index}]"
+            }
+        }
+        .replace(".[", "[")
 
 private val GALLERY_DL_LOCATION = setOf("base-directory", "directory")
 private val GETJMANGA_OVERRIDDEN = setOf("format", "bulk", "both", "cbz")

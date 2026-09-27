@@ -18,7 +18,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
-enum class EditorMode { VISUAL, TEXT }
+enum class EditorMode {
+    VISUAL,
+    TEXT,
+}
 
 /** A line for the snackbar: [text] with [arg] in it. */
 data class EditorMessage(@StringRes val text: Int, val arg: String = "")
@@ -48,13 +51,14 @@ data class ConfigEditorState(
     /** The file was written by something else since it was read here. */
     val conflict: Boolean = false,
     /** Settings Godlo refuses in what is being saved, for the user to have removed. */
-    val refused: List<RefusedSetting>? = null
+    val refused: List<RefusedSetting>? = null,
 ) {
     val dirty: Boolean
-        get() = when (mode) {
-            EditorMode.TEXT -> text != saved
-            EditorMode.VISUAL -> base != saved || tree != baseTree
-        }
+        get() =
+            when (mode) {
+                EditorMode.TEXT -> text != saved
+                EditorMode.VISUAL -> base != saved || tree != baseTree
+            }
 }
 
 /** Edits one of the tools' config files, as a tree or as text. */
@@ -78,28 +82,31 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                 if (file.isFile) file.readText() to file.lastModified() else "" to 0L
             }
         }
-        val (text, stamp) = read.getOrElse {
-            Log.w("Godlo", "could not read $file", it)
-            _state.value = ConfigEditorState(
-                loading = false,
-                message = EditorMessage(R.string.config_error, it.message ?: "")
-            )
-            return
-        }
+        val (text, stamp) =
+            read.getOrElse {
+                Log.w("Godlo", "could not read $file", it)
+                _state.value =
+                    ConfigEditorState(
+                        loading = false,
+                        message = EditorMessage(R.string.config_error, it.message ?: ""),
+                    )
+                return
+            }
         // Reading it again keeps the editor the user picked; the first read opens the tree.
         val keepText = _state.value.run { !loading && mode == EditorMode.TEXT }
         val tree = if (config.visual && !keepText) parse(text) else null
-        _state.value = ConfigEditorState(
-            loading = false,
-            mode = if (tree?.isSuccess == true) EditorMode.VISUAL else EditorMode.TEXT,
-            saved = text,
-            stamp = stamp,
-            text = text,
-            tree = tree?.getOrNull(),
-            base = text,
-            baseTree = tree?.getOrNull(),
-            message = tree?.exceptionOrNull()?.let(::cannotShow)
-        )
+        _state.value =
+            ConfigEditorState(
+                loading = false,
+                mode = if (tree?.isSuccess == true) EditorMode.VISUAL else EditorMode.TEXT,
+                saved = text,
+                stamp = stamp,
+                text = text,
+                tree = tree?.getOrNull(),
+                base = text,
+                baseTree = tree?.getOrNull(),
+                message = tree?.exceptionOrNull()?.let(::cannotShow),
+            )
     }
 
     fun setMode(mode: EditorMode) {
@@ -123,7 +130,7 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                                     tree = tree,
                                     base = it.text,
                                     baseTree = tree,
-                                    path = tree.validPrefix(it.path)
+                                    path = tree.validPrefix(it.path),
                                 )
                             }
                         }
@@ -158,24 +165,26 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                 when {
                     tree == null -> state.copy(text = stripped)
 
-                    tree.isSuccess -> state.copy(
-                        tree = tree.getOrNull(),
-                        base = stripped,
-                        baseTree = tree.getOrNull(),
-                        path = emptyList()
-                    )
+                    tree.isSuccess ->
+                        state.copy(
+                            tree = tree.getOrNull(),
+                            base = stripped,
+                            baseTree = tree.getOrNull(),
+                            path = emptyList(),
+                        )
 
                     else -> state.copy(mode = EditorMode.TEXT, text = stripped)
                 }.copy(
-                    message = tree?.exceptionOrNull()?.let(::cannotShow)
-                        ?: if (removed.isEmpty()) {
-                            EditorMessage(R.string.config_imported)
-                        } else {
-                            EditorMessage(
-                                R.string.config_imported_removed,
-                                removed.joinToString(", ") { it.setting }
-                            )
-                        }
+                    message =
+                        tree?.exceptionOrNull()?.let(::cannotShow)
+                            ?: if (removed.isEmpty()) {
+                                EditorMessage(R.string.config_imported)
+                            } else {
+                                EditorMessage(
+                                    R.string.config_imported_removed,
+                                    removed.joinToString(", ") { it.setting },
+                                )
+                            }
                 )
             }
         }
@@ -221,10 +230,11 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
         }
         val text = content(current)
         if (check) {
-            val problem = withContext(Dispatchers.IO) {
-                runCatching { container.python.checkConfig(config, text) }
-                    .getOrElse { it.message ?: it.javaClass.simpleName }
-            }
+            val problem =
+                withContext(Dispatchers.IO) {
+                    runCatching { container.python.checkConfig(config, text) }
+                        .getOrElse { it.message ?: it.javaClass.simpleName }
+                }
             if (problem.isNotEmpty()) {
                 _state.update { it.copy(problem = problem) }
                 return
@@ -242,28 +252,31 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                 file.writeText(text)
                 file.lastModified()
             }
-        }.onSuccess { written ->
-            _state.update {
-                it.copy(
-                    saved = text,
-                    stamp = written,
-                    text = if (it.mode == EditorMode.TEXT) text else it.text,
-                    base = if (it.mode == EditorMode.VISUAL) text else it.base,
-                    baseTree = if (it.mode == EditorMode.VISUAL) it.tree else it.baseTree,
-                    message = EditorMessage(R.string.config_saved)
-                )
-            }
-            changed()
-        }.onFailure { e ->
-            _state.update {
-                it.copy(
-                    message = EditorMessage(
-                        R.string.config_error,
-                        e.message ?: ""
-                    )
-                )
-            }
         }
+            .onSuccess { written ->
+                _state.update {
+                    it.copy(
+                        saved = text,
+                        stamp = written,
+                        text = if (it.mode == EditorMode.TEXT) text else it.text,
+                        base = if (it.mode == EditorMode.VISUAL) text else it.base,
+                        baseTree = if (it.mode == EditorMode.VISUAL) it.tree else it.baseTree,
+                        message = EditorMessage(R.string.config_saved),
+                    )
+                }
+                changed()
+            }
+            .onFailure { e ->
+                _state.update {
+                    it.copy(
+                        message =
+                            EditorMessage(
+                                R.string.config_error,
+                                e.message ?: "",
+                            )
+                    )
+                }
+            }
     }
 
     fun delete() {
@@ -300,32 +313,36 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
     }
 
     /**
-     * [text] without the settings Godlo refuses, and those settings. Text that cannot be read
-     * comes back as it is: the syntax check before saving points that out.
+     * [text] without the settings Godlo refuses, and those settings. Text that cannot be read comes
+     * back as it is: the syntax check before saving points that out.
      */
     private suspend fun strip(text: String): Pair<String, List<RefusedSetting>> =
         withContext(Dispatchers.IO) {
             when (config.format) {
-                ConfigFormat.ARGS -> runCatching { container.python.stripYtdlpConfig(text) }
-                    .map { stripped ->
-                        stripped.text to stripped.removed.map {
-                            RefusedSetting(it.setting, Refusal.fromId(it.reason))
+                ConfigFormat.ARGS ->
+                    runCatching { container.python.stripYtdlpConfig(text) }
+                        .map { stripped ->
+                            stripped.text to
+                                stripped.removed.map {
+                                    RefusedSetting(it.setting, Refusal.fromId(it.reason))
+                                }
                         }
-                    }
-                    .getOrDefault(text to emptyList())
+                        .getOrDefault(text to emptyList())
 
                 ConfigFormat.COOKIES -> text to emptyList()
 
-                ConfigFormat.JSON, ConfigFormat.TOML -> {
+                ConfigFormat.JSON,
+                ConfigFormat.TOML -> {
                     val tree = parse(text).getOrNull() ?: return@withContext text to emptyList()
                     val found = config.refusedIn(tree)
                     if (found.isEmpty()) return@withContext text to emptyList()
                     val cleaned = found.fold(tree) { t, (path, _) -> t.remove(path) }
-                    val written = if (config.format == ConfigFormat.TOML) {
-                        container.python.tomlFromJson(text, cleaned.toString())
-                    } else {
-                        formatConfigJson(cleaned)
-                    }
+                    val written =
+                        if (config.format == ConfigFormat.TOML) {
+                            container.python.tomlFromJson(text, cleaned.toString())
+                        } else {
+                            formatConfigJson(cleaned)
+                        }
                     written to
                         found.map { (path, refusal) -> RefusedSetting(settingName(path), refusal) }
                 }
@@ -339,27 +356,30 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
         // Unchanged: exactly as read, not as the tree would be written out.
         if (tree == state.baseTree) return state.base
         return when (config.format) {
-            ConfigFormat.TOML -> withContext(Dispatchers.IO) {
-                container.python.tomlFromJson(state.base, tree.toString())
-            }
+            ConfigFormat.TOML ->
+                withContext(Dispatchers.IO) {
+                    container.python.tomlFromJson(state.base, tree.toString())
+                }
 
             else -> formatConfigJson(tree)
         }
     }
 
-    private suspend fun parse(text: String): Result<JsonElement> = withContext(Dispatchers.IO) {
-        runCatching {
-            when (config.format) {
-                ConfigFormat.TOML -> Json.parseToJsonElement(container.python.tomlToJson(text))
-                else -> parseConfigJson(text)
+    private suspend fun parse(text: String): Result<JsonElement> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                when (config.format) {
+                    ConfigFormat.TOML -> Json.parseToJsonElement(container.python.tomlToJson(text))
+                    else -> parseConfigJson(text)
+                }
             }
         }
-    }
 
-    private fun cannotShow(e: Throwable) = EditorMessage(
-        R.string.config_parse_error,
-        e.message ?: ""
-    )
+    private fun cannotShow(e: Throwable) =
+        EditorMessage(
+            R.string.config_parse_error,
+            e.message ?: "",
+        )
 
     private fun busy(block: suspend () -> Unit) {
         viewModelScope.launch {
@@ -371,10 +391,11 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                 Log.w("Godlo", "config editor", e)
                 _state.update {
                     it.copy(
-                        message = EditorMessage(
-                            R.string.config_error,
-                            e.message ?: ""
-                        )
+                        message =
+                            EditorMessage(
+                                R.string.config_error,
+                                e.message ?: "",
+                            )
                     )
                 }
             } finally {

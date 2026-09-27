@@ -21,20 +21,26 @@ sealed interface TreeNode<out T> {
         override val modified: Long,
         /** How many entries going into the folder shows. */
         val entries: Int,
-        override val dirs: List<File>
+        override val dirs: List<File>,
     ) : TreeNode<T> {
-        override val name: String get() = path.last()
-        override val key: String get() = "folder:$name"
+        override val name: String
+            get() = path.last()
+
+        override val key: String
+            get() = "folder:$name"
     }
 
     data class Leaf<T>(
         val item: T,
         override val name: String,
         override val modified: Long,
-        val file: File
+        val file: File,
     ) : TreeNode<T> {
-        override val key: String get() = "item:${file.absolutePath}"
-        override val dirs: List<File> get() = listOf(file)
+        override val key: String
+            get() = "item:${file.absolutePath}"
+
+        override val dirs: List<File>
+            get() = listOf(file)
     }
 }
 
@@ -49,69 +55,78 @@ class LibraryTree<T>(
     private val fileOf: (T) -> File,
     private val modifiedOf: (T) -> Long,
     /** How the items of one level are ordered; folders always come first, newest first. */
-    private val itemOrder: (List<T>) -> List<T>
+    private val itemOrder: (List<T>) -> List<T>,
 ) {
     /** What is directly under [path] (empty for the top level). */
     fun children(items: List<T>, path: List<String>): List<TreeNode<T>> {
         val below = items.filter {
-            pathOf(it).size > path.size &&
-                pathOf(it).subList(0, path.size) == path
+            pathOf(it).size > path.size && pathOf(it).subList(0, path.size) == path
         }
         val (leaves, deeper) = below.partition { pathOf(it).size == path.size + 1 }
-        val folders = deeper.groupBy { pathOf(it)[path.size] }.map { (name, inside) ->
-            val folderPath = path + name
-            val latest = inside.maxBy(modifiedOf)
-            TreeNode.Folder(
-                path = folderPath,
-                latest = latest,
-                modified = modifiedOf(latest),
-                entries = inside.map { pathOf(it)[folderPath.size] }.distinct().size,
-                dirs = inside.map {
-                    fileOf(it).ancestor(pathOf(it).size - folderPath.size)
-                }.distinct()
-            )
-        }
+        val folders =
+            deeper
+                .groupBy { pathOf(it)[path.size] }
+                .map { (name, inside) ->
+                    val folderPath = path + name
+                    val latest = inside.maxBy(modifiedOf)
+                    TreeNode.Folder(
+                        path = folderPath,
+                        latest = latest,
+                        modified = modifiedOf(latest),
+                        entries = inside.map { pathOf(it)[folderPath.size] }.distinct().size,
+                        dirs =
+                            inside
+                                .map {
+                                    fileOf(it).ancestor(pathOf(it).size - folderPath.size)
+                                }
+                                .distinct(),
+                    )
+                }
         return folders.sortedByDescending { it.modified } +
             itemOrder(leaves).map {
                 TreeNode.Leaf(it, pathOf(it).last(), modifiedOf(it), fileOf(it))
             }
     }
 
-    private fun File.ancestor(levels: Int): File = (1..levels).fold(this) { dir, _ ->
-        dir.parentFile!!
-    }
+    private fun File.ancestor(levels: Int): File =
+        (1..levels).fold(this) { dir, _ ->
+            dir.parentFile!!
+        }
 
     companion object {
         /** Albums: episodes in reading order, so 2話 comes before 10話. */
-        val albums = LibraryTree<Album>(
-            pathOf = { it.path },
-            fileOf = { it.dir },
-            modifiedOf = { it.modified },
-            itemOrder = { level -> level.sortedWith(compareBy(NaturalOrder) { it.title }) }
-        )
+        val albums =
+            LibraryTree<Album>(
+                pathOf = { it.path },
+                fileOf = { it.dir },
+                modifiedOf = { it.modified },
+                itemOrder = { level -> level.sortedWith(compareBy(NaturalOrder) { it.title }) },
+            )
 
         /**
-         * Videos and audio: newest first, except where every name starts with a number, as
-         * yt-dlp's playlist entries do; those keep the playlist's order.
+         * Videos and audio: newest first, except where every name starts with a number, as yt-dlp's
+         * playlist entries do; those keep the playlist's order.
          */
-        val media = LibraryTree<MediaFile>(
-            pathOf = { it.path },
-            fileOf = { it.file },
-            modifiedOf = { it.modified },
-            itemOrder = { level ->
-                if (level.isNotEmpty() && level.all { it.file.name.first().isDigit() }) {
-                    level.sortedWith(compareBy(NaturalOrder) { it.file.name })
-                } else {
-                    level.sortedByDescending { it.modified }
-                }
-            }
-        )
+        val media =
+            LibraryTree<MediaFile>(
+                pathOf = { it.path },
+                fileOf = { it.file },
+                modifiedOf = { it.modified },
+                itemOrder = { level ->
+                    if (level.isNotEmpty() && level.all { it.file.name.first().isDigit() }) {
+                        level.sortedWith(compareBy(NaturalOrder) { it.file.name })
+                    } else {
+                        level.sortedByDescending { it.modified }
+                    }
+                },
+            )
     }
 }
 
 /** An album's first page, or for a folder, that of the album inside it most recently updated. */
 val TreeNode<Album>.cover: File
-    get() = when (this) {
-        is TreeNode.Folder -> latest.cover
-        is TreeNode.Leaf -> item.cover
-    }
+    get() =
+        when (this) {
+            is TreeNode.Folder -> latest.cover
+            is TreeNode.Leaf -> item.cover
+        }

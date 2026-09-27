@@ -46,14 +46,15 @@ fun CodeEditor(
     onChange: (String) -> Unit,
     format: ConfigFormat,
     placeholder: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val syntax = if (scheme.surface.luminance() < 0.5f) DarkSyntax else LightSyntax
-    val style = MaterialTheme.typography.bodyMedium.copy(
-        fontFamily = FontFamily.Monospace,
-        color = scheme.onSurface
-    )
+    val style =
+        MaterialTheme.typography.bodyMedium.copy(
+            fontFamily = FontFamily.Monospace,
+            color = scheme.onSurface,
+        )
     val colouring = remember(format, syntax) { SyntaxTransformation(format, syntax) }
     var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
 
@@ -65,14 +66,16 @@ fun CodeEditor(
                 text = text,
                 textLayout = textLayout,
                 style = style.copy(color = scheme.outline),
-                modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 8.dp)
+                modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 8.dp),
             )
             BasicTextField(
                 value = text,
                 onValueChange = onChange,
                 // As tall as the screen at least, so a tap below the text still starts typing.
-                modifier = Modifier.weight(1f).heightIn(min = viewport)
-                    .padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                modifier =
+                    Modifier.weight(1f)
+                        .heightIn(min = viewport)
+                        .padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 textStyle = style,
                 cursorBrush = SolidColor(scheme.primary),
                 visualTransformation = colouring,
@@ -83,12 +86,12 @@ fun CodeEditor(
                         if (text.isEmpty()) {
                             Text(
                                 placeholder,
-                                style = style.copy(color = scheme.outline)
+                                style = style.copy(color = scheme.outline),
                             )
                         }
                         inner()
                     }
-                }
+                },
             )
         }
     }
@@ -100,12 +103,12 @@ private fun LineNumbers(
     text: String,
     textLayout: TextLayoutResult?,
     style: TextStyle,
-    modifier: Modifier
+    modifier: Modifier,
 ) {
     val starts = remember(text) { lineStarts(text) }
     Layout(
         content = { starts.indices.forEach { Text("${it + 1}", style = style) } },
-        modifier = modifier
+        modifier = modifier,
     ) { measurables, _ ->
         val numbers = measurables.map { it.measure(Constraints()) }
         val width = numbers.maxOfOrNull { it.width } ?: 0
@@ -128,7 +131,7 @@ private fun LineNumbers(
 /** Colours the text with [highlight]; the characters stay where they are. */
 private class SyntaxTransformation(
     private val format: ConfigFormat,
-    private val colors: SyntaxColors
+    private val colors: SyntaxColors,
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val coloured = AnnotatedString.Builder(text)
@@ -138,15 +141,16 @@ private class SyntaxTransformation(
         return TransformedText(coloured.toAnnotatedString(), OffsetMapping.Identity)
     }
 
-    private fun style(kind: TokenKind): SpanStyle = when (kind) {
-        TokenKind.COMMENT -> SpanStyle(color = colors.comment, fontStyle = FontStyle.Italic)
-        TokenKind.STRING -> SpanStyle(color = colors.string)
-        TokenKind.NUMBER -> SpanStyle(color = colors.number)
-        TokenKind.KEYWORD -> SpanStyle(color = colors.keyword)
-        TokenKind.KEY -> SpanStyle(color = colors.key)
-        TokenKind.SECTION -> SpanStyle(color = colors.section, fontWeight = FontWeight.Bold)
-        TokenKind.OPTION -> SpanStyle(color = colors.option)
-    }
+    private fun style(kind: TokenKind): SpanStyle =
+        when (kind) {
+            TokenKind.COMMENT -> SpanStyle(color = colors.comment, fontStyle = FontStyle.Italic)
+            TokenKind.STRING -> SpanStyle(color = colors.string)
+            TokenKind.NUMBER -> SpanStyle(color = colors.number)
+            TokenKind.KEYWORD -> SpanStyle(color = colors.keyword)
+            TokenKind.KEY -> SpanStyle(color = colors.key)
+            TokenKind.SECTION -> SpanStyle(color = colors.section, fontWeight = FontWeight.Bold)
+            TokenKind.OPTION -> SpanStyle(color = colors.option)
+        }
 
     override fun equals(other: Any?): Boolean =
         other is SyntaxTransformation && other.format == format && other.colors == colors

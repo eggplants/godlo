@@ -14,11 +14,11 @@ class FolderPathTest {
     fun internalStorage() {
         assertEquals(
             "/storage/emulated/0/Download/Godlo/yt-dlp",
-            FolderPath.toPath(EXTERNAL_STORAGE, "primary:Download/Godlo/yt-dlp", primary)
+            FolderPath.toPath(EXTERNAL_STORAGE, "primary:Download/Godlo/yt-dlp", primary),
         )
         assertEquals(
             "/storage/emulated/0",
-            FolderPath.toPath(EXTERNAL_STORAGE, "primary:", primary)
+            FolderPath.toPath(EXTERNAL_STORAGE, "primary:", primary),
         )
     }
 
@@ -26,7 +26,7 @@ class FolderPathTest {
     fun sdCard() {
         assertEquals(
             "/storage/1A2B-3C4D/Movies",
-            FolderPath.toPath(EXTERNAL_STORAGE, "1A2B-3C4D:Movies", primary)
+            FolderPath.toPath(EXTERNAL_STORAGE, "1A2B-3C4D:Movies", primary),
         )
     }
 
@@ -34,7 +34,7 @@ class FolderPathTest {
     fun documentsRoot() {
         assertEquals(
             "/storage/emulated/0/Documents/a",
-            FolderPath.toPath(EXTERNAL_STORAGE, "home:a", primary)
+            FolderPath.toPath(EXTERNAL_STORAGE, "home:a", primary),
         )
     }
 
@@ -42,7 +42,7 @@ class FolderPathTest {
     fun downloadsProvider() {
         assertEquals(
             "/storage/emulated/0/Download/x",
-            FolderPath.toPath(DOWNLOADS, "raw:/storage/emulated/0/Download/x/", primary)
+            FolderPath.toPath(DOWNLOADS, "raw:/storage/emulated/0/Download/x/", primary),
         )
         assertNull(FolderPath.toPath(DOWNLOADS, "msf:123", primary))
         assertNull(FolderPath.toPath(DOWNLOADS, "downloads", primary))
@@ -57,12 +57,12 @@ class FolderPathTest {
     fun documentIds() {
         assertEquals(
             "primary:Download/Godlo/yt-dlp",
-            FolderPath.toDocumentId("/storage/emulated/0/Download/Godlo/yt-dlp/", primary)
+            FolderPath.toDocumentId("/storage/emulated/0/Download/Godlo/yt-dlp/", primary),
         )
         assertEquals("primary:", FolderPath.toDocumentId(primary, primary))
         assertEquals(
             "1A2B-3C4D:Movies",
-            FolderPath.toDocumentId("/storage/1A2B-3C4D/Movies", primary)
+            FolderPath.toDocumentId("/storage/1A2B-3C4D/Movies", primary),
         )
         assertNull(FolderPath.toDocumentId("/storage/emulated/10/x", primary))
         assertNull(FolderPath.toDocumentId("/data/x", primary))

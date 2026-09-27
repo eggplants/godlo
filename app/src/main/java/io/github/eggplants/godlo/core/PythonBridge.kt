@@ -13,8 +13,7 @@ import kotlinx.serialization.json.Json
 enum class Engine(val id: String, val kinds: List<MediaKind>) {
     YTDLP("yt-dlp", listOf(MediaKind.VIDEO, MediaKind.AUDIO)),
     GALLERY_DL("gallery-dl", listOf(MediaKind.IMAGE)),
-    GETJMANGA("getjmanga", listOf(MediaKind.IMAGE))
-    ;
+    GETJMANGA("getjmanga", listOf(MediaKind.IMAGE));
 
     companion object {
         fun fromId(id: String): Engine = entries.firstOrNull { it.id == id } ?: YTDLP
@@ -27,7 +26,7 @@ data class Detection(
     val kind: String,
     val site: String,
     /** Every tool that can take the URL, best first. */
-    val engines: List<String> = emptyList()
+    val engines: List<String> = emptyList(),
 )
 
 @Serializable
@@ -52,22 +51,19 @@ data class DownloadRequest(
     /** Holds `gallery-dl.conf` and `getjmanga.toml`, when the user put them there. */
     @SerialName("config_dir") val configDir: String? = null,
     /** The UI language, "ja" or "en", for the progress and error text Python writes. */
-    val lang: String = "en"
+    val lang: String = "en",
 )
 
 /** A getjmanga work stored for patrol: where the next patrol picks up, and its title. */
-@Serializable
-data class PatrolWork(val url: String, val title: String = "")
+@Serializable data class PatrolWork(val url: String, val title: String = "")
 
 /** A config file without the settings Godlo refuses; see `strip_ytdlp_config`. */
 @Serializable
 data class StrippedConfig(val text: String, val removed: List<RemovedSetting> = emptyList())
 
-@Serializable
-data class RemovedSetting(val setting: String, val reason: String)
+@Serializable data class RemovedSetting(val setting: String, val reason: String)
 
-@Serializable
-data class Outcome(val status: String, val message: String = "")
+@Serializable data class Outcome(val status: String, val message: String = "")
 
 /** What Python reports a running download through. Called from the download thread. */
 interface DownloadCallback {
@@ -92,20 +88,23 @@ class PythonBridge(private val context: Context) {
         if (!Python.isStarted()) Python.start(AndroidPlatform(context))
         val module = Python.getInstance().getModule("godlo_bridge")
         val binaries = Binaries.prepare(context)
-        val env = mapOf(
-            "ffmpeg" to binaries.ffmpeg?.absolutePath,
-            "ffmpeg_lib_dir" to binaries.ffmpegLibDir?.absolutePath,
-            "qjs" to binaries.qjs?.absolutePath,
-            "cache_dir" to context.cacheDir.absolutePath,
-            "config_dir" to File(context.filesDir, "config").absolutePath,
-            "packages_dir" to packagesDir.absolutePath
-        ).filterValues { it != null }
+        val env =
+            mapOf(
+                    "ffmpeg" to binaries.ffmpeg?.absolutePath,
+                    "ffmpeg_lib_dir" to binaries.ffmpegLibDir?.absolutePath,
+                    "qjs" to binaries.qjs?.absolutePath,
+                    "cache_dir" to context.cacheDir.absolutePath,
+                    "config_dir" to File(context.filesDir, "config").absolutePath,
+                    "packages_dir" to packagesDir.absolutePath,
+                )
+                .filterValues { it != null }
         module.callAttr("setup", json.encodeToString(env))
         module
     }
 
     /** Where runtime updates of the tools go; see [updateTools]. */
-    val packagesDir: File get() = File(context.noBackupFilesDir, "python-packages")
+    val packagesDir: File
+        get() = File(context.noBackupFilesDir, "python-packages")
 
     fun versions(): Map<String, String> =
         json.decodeFromString(module.callAttr("versions").toString())
@@ -113,13 +112,14 @@ class PythonBridge(private val context: Context) {
     fun detect(url: String): Detection =
         json.decodeFromString(module.callAttr("detect", url).toString())
 
-    fun download(request: DownloadRequest, callback: DownloadCallback): Outcome = try {
-        json.decodeFromString(
-            module.callAttr("download", json.encodeToString(request), callback).toString()
-        )
-    } catch (e: Exception) {
-        Outcome("error", e.message ?: e.javaClass.simpleName)
-    }
+    fun download(request: DownloadRequest, callback: DownloadCallback): Outcome =
+        try {
+            json.decodeFromString(
+                module.callAttr("download", json.encodeToString(request), callback).toString()
+            )
+        } catch (e: Exception) {
+            Outcome("error", e.message ?: e.javaClass.simpleName)
+        }
 
     /** The works `getjmanga.toml` in [configDir] stores for patrol. */
     fun patrolWorks(configDir: File): List<PatrolWork> =
@@ -146,12 +146,13 @@ class PythonBridge(private val context: Context) {
         json.decodeFromString(module.callAttr("strip_ytdlp_config", text).toString())
 
     /** pip-installs the newest tools into [packagesDir]; they are used from the next launch on. */
-    fun updateTools(): Outcome = try {
-        packagesDir.mkdirs()
-        json.decodeFromString(module.callAttr("update_tools").toString())
-    } catch (e: Exception) {
-        Outcome("error", e.message ?: e.javaClass.simpleName)
-    }
+    fun updateTools(): Outcome =
+        try {
+            packagesDir.mkdirs()
+            json.decodeFromString(module.callAttr("update_tools").toString())
+        } catch (e: Exception) {
+            Outcome("error", e.message ?: e.javaClass.simpleName)
+        }
 
     /** Drops the runtime updates, falling back to the tools in the APK from the next launch on. */
     fun resetTools() {

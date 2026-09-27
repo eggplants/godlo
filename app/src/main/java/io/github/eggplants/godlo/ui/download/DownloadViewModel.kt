@@ -37,24 +37,27 @@ data class DownloadForm(
     val videoQuality: String = "1080",
     val audioFormat: String = "mp3",
     /** The tools that can take the URL; null until detection says, when any may. */
-    val supported: List<Engine>? = null
+    val supported: List<Engine>? = null,
 ) {
     /**
-     * The URL as the tools get it: trimmed, and with the full-width letters a Japanese keyboard
-     * may slip in ("ｗ" for "w") made ASCII.
+     * The URL as the tools get it: trimmed, and with the full-width letters a Japanese keyboard may
+     * slip in ("ｗ" for "w") made ASCII.
      */
-    val cleanUrl: String get() = cleanUrl(url)
+    val cleanUrl: String
+        get() = cleanUrl(url)
 
-    val valid: Boolean get() = cleanUrl.startsWith("http") && engine != null
+    val valid: Boolean
+        get() = cleanUrl.startsWith("http") && engine != null
 
     fun allows(engine: Engine): Boolean = supported?.contains(engine) ?: true
 
     fun allows(kind: MediaKind): Boolean = supported?.any { kind in it.kinds } ?: true
 
     /** The tool for [kind]: the current one if it can, else the best one that can. */
-    fun engineFor(kind: MediaKind): Engine = engine?.takeIf { kind in it.kinds && allows(it) }
-        ?: supported?.firstOrNull { kind in it.kinds }
-        ?: if (kind == MediaKind.IMAGE) Engine.GALLERY_DL else Engine.YTDLP
+    fun engineFor(kind: MediaKind): Engine =
+        engine?.takeIf { kind in it.kinds && allows(it) }
+            ?: supported?.firstOrNull { kind in it.kinds }
+            ?: if (kind == MediaKind.IMAGE) Engine.GALLERY_DL else Engine.YTDLP
 }
 
 @OptIn(FlowPreview::class)
@@ -70,9 +73,13 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch {
-            _form.map { it.cleanUrl }.distinctUntilChanged().debounce(400).collect { url ->
-                if (url.startsWith("http")) detect(url)
-            }
+            _form
+                .map { it.cleanUrl }
+                .distinctUntilChanged()
+                .debounce(400)
+                .collect { url ->
+                    if (url.startsWith("http")) detect(url)
+                }
         }
         viewModelScope.launch {
             container.sharedUrl.collect { url ->
@@ -102,13 +109,10 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             }
         _form.update { form ->
             if (form.cleanUrl != url) return@update form
-            if (found ==
-                null
-            ) {
+            if (found == null) {
                 return@update form.copy(
                     detecting = false,
-                    engine =
-                        form.engine ?: Engine.YTDLP
+                    engine = form.engine ?: Engine.YTDLP,
                 )
             }
             val site = found.site
@@ -122,7 +126,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                     kind = MediaKind.fromId(found.kind),
                     site = site,
                     supported = supported,
-                    manual = false
+                    manual = false,
                 )
             }
         }
@@ -131,14 +135,13 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
     fun setEngine(engine: Engine) = _form.update {
         it.copy(
             engine = engine,
-            kind = if (it.kind in
-                engine.kinds
-            ) {
-                it.kind
-            } else {
-                engine.kinds.first()
-            },
-            manual = true
+            kind =
+                if (it.kind in engine.kinds) {
+                    it.kind
+                } else {
+                    engine.kinds.first()
+                },
+            manual = true,
         )
     }
 
@@ -169,7 +172,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
             videoQuality = form.videoQuality,
             audioFormat = form.audioFormat,
             previous = getjmanga && episodes == EpisodeRange.ALL,
-            store = form.store && getjmanga
+            store = form.store && getjmanga,
         )
         _form.update {
             it.copy(
@@ -178,7 +181,7 @@ class DownloadViewModel(private val container: AppContainer) : ViewModel() {
                 site = "",
                 manual = false,
                 playlist = false,
-                supported = null
+                supported = null,
             )
         }
     }

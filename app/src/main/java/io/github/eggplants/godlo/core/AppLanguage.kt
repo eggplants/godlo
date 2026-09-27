@@ -9,8 +9,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 
 /**
- * The UI language, set per app through AppCompat: kept by the system on Android 13+ (and shown
- * in its per-app language settings), by AppCompat before that.
+ * The UI language, set per app through AppCompat: kept by the system on Android 13+ (and shown in
+ * its per-app language settings), by AppCompat before that.
  */
 object AppLanguage {
     /** Language tags offered in settings, each named in itself; "" follows the device. */
@@ -37,8 +37,8 @@ object AppLanguage {
 
     /**
      * Puts the chosen language back into an activity's [resources] before Android 13. A
-     * configuration change the activity handles itself, such as rotation, brings back the
-     * device's language there, and AppCompat does not apply the chosen one again.
+     * configuration change the activity handles itself, such as rotation, brings back the device's
+     * language there, and AppCompat does not apply the chosen one again.
      */
     @Suppress("DEPRECATION") // Resources.updateConfiguration, which AppCompat itself uses here.
     fun reapply(resources: Resources) {
@@ -53,8 +53,8 @@ object AppLanguage {
     }
 
     /**
-     * The language the UI is shown in, "ja" or "en": English stands in for any language the app
-     * has no resources for. For text made outside Android resources, i.e. by the Python tools.
+     * The language the UI is shown in, "ja" or "en": English stands in for any language the app has
+     * no resources for. For text made outside Android resources, i.e. by the Python tools.
      */
     fun shown(): String {
         val locale =

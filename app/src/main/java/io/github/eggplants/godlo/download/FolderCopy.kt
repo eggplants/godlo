@@ -26,14 +26,18 @@ class FolderCopy(private val resolver: ContentResolver, private val tree: Uri) {
             progress(i, files.size)
             val parent = folder(relative.substringBeforeLast('/', ""))
             val name = relative.substringAfterLast('/')
-            val target = child(parent, name) ?: DocumentsContract.createDocument(
-                resolver,
-                parent,
-                mimeType(name),
-                name
-            ) ?: throw IOException("cannot create $relative")
-            val output = resolver.openOutputStream(target, "wt")
-                ?: throw IOException("cannot write $relative")
+            val target =
+                child(parent, name)
+                    ?: DocumentsContract.createDocument(
+                        resolver,
+                        parent,
+                        mimeType(name),
+                        name,
+                    )
+                    ?: throw IOException("cannot create $relative")
+            val output =
+                resolver.openOutputStream(target, "wt")
+                    ?: throw IOException("cannot write $relative")
             output.use { out -> file.inputStream().use { it.copyTo(out) } }
         }
         progress(files.size, files.size)
@@ -41,32 +45,38 @@ class FolderCopy(private val resolver: ContentResolver, private val tree: Uri) {
 
     /** The folder at [path] under the tree ("" for the tree itself), made if missing. */
     private fun folder(path: String): Uri {
-        folders[path]?.let { return it }
-        val uri = if (path.isEmpty()) {
-            DocumentsContract.buildDocumentUriUsingTree(
-                tree,
-                DocumentsContract.getTreeDocumentId(tree)
-            )
-        } else {
-            val parent = folder(path.substringBeforeLast('/', ""))
-            val name = path.substringAfterLast('/')
-            child(parent, name) ?: DocumentsContract.createDocument(
-                resolver,
-                parent,
-                Document.MIME_TYPE_DIR,
-                name
-            ) ?: throw IOException("cannot create $path")
+        folders[path]?.let {
+            return it
         }
+        val uri =
+            if (path.isEmpty()) {
+                DocumentsContract.buildDocumentUriUsingTree(
+                    tree,
+                    DocumentsContract.getTreeDocumentId(tree),
+                )
+            } else {
+                val parent = folder(path.substringBeforeLast('/', ""))
+                val name = path.substringAfterLast('/')
+                child(parent, name)
+                    ?: DocumentsContract.createDocument(
+                        resolver,
+                        parent,
+                        Document.MIME_TYPE_DIR,
+                        name,
+                    )
+                    ?: throw IOException("cannot create $path")
+            }
         folders[path] = uri
         return uri
     }
 
     /** The document named [name] in the folder [parent], if there is one. */
     private fun child(parent: Uri, name: String): Uri? {
-        val children = DocumentsContract.buildChildDocumentsUriUsingTree(
-            tree,
-            DocumentsContract.getDocumentId(parent)
-        )
+        val children =
+            DocumentsContract.buildChildDocumentsUriUsingTree(
+                tree,
+                DocumentsContract.getDocumentId(parent),
+            )
         val columns = arrayOf(Document.COLUMN_DOCUMENT_ID, Document.COLUMN_DISPLAY_NAME)
         resolver.query(children, columns, null, null, null)?.use { cursor ->
             while (cursor.moveToNext()) {
@@ -79,25 +89,30 @@ class FolderCopy(private val resolver: ContentResolver, private val tree: Uri) {
     }
 
     private fun mimeType(name: String): String =
-        MimeTypeMap.getSingleton().getMimeTypeFromExtension(
-            name.substringAfterLast('.', "").lowercase()
-        ) ?: "application/octet-stream"
+        MimeTypeMap.getSingleton()
+            .getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase())
+            ?: "application/octet-stream"
 
     companion object {
         /**
-         * The files under [paths], which may be directories, each with its path relative to
-         * [root]. Paths outside [root] are left out: they have no place in the copy.
+         * The files under [paths], which may be directories, each with its path relative to [root].
+         * Paths outside [root] are left out: they have no place in the copy.
          */
-        fun plan(root: File, paths: List<String>): List<Pair<File, String>> = paths
-            .map(::File)
-            .flatMap {
-                if (it.isDirectory) it.walkTopDown().filter(File::isFile).toList() else listOf(it)
-            }
-            .filter { it.isFile }
-            .distinct()
-            .mapNotNull { file ->
-                val relative = file.relativeToOrNull(root)?.invariantSeparatorsPath
-                relative?.takeIf { it.isNotEmpty() && !it.startsWith("..") }?.let { file to it }
-            }
+        fun plan(root: File, paths: List<String>): List<Pair<File, String>> =
+            paths
+                .map(::File)
+                .flatMap {
+                    if (it.isDirectory) {
+                        it.walkTopDown().filter(File::isFile).toList()
+                    } else {
+                        listOf(it)
+                    }
+                }
+                .filter { it.isFile }
+                .distinct()
+                .mapNotNull { file ->
+                    val relative = file.relativeToOrNull(root)?.invariantSeparatorsPath
+                    relative?.takeIf { it.isNotEmpty() && !it.startsWith("..") }?.let { file to it }
+                }
     }
 }

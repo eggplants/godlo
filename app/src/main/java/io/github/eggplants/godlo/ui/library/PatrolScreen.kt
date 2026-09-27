@@ -60,25 +60,27 @@ fun PatrolScreen(container: AppContainer, onBack: () -> Unit, onStarted: () -> U
                             container.patrol.start()
                             onStarted()
                         },
-                        enabled = works.isNotEmpty() && tasks.none { it.patrol && !it.finished }
-                    ) { Icon(Icons.Filled.PlayArrow, stringResource(R.string.patrol_run)) }
+                        enabled = works.isNotEmpty() && tasks.none { it.patrol && !it.finished },
+                    ) {
+                        Icon(Icons.Filled.PlayArrow, stringResource(R.string.patrol_run))
+                    }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { padding ->
         if (works.isEmpty()) {
             EmptyState(
                 ImageVector.vectorResource(R.drawable.ic_patrol),
                 stringResource(R.string.patrol_empty_title),
                 stringResource(R.string.patrol_empty_body),
-                Modifier.padding(padding)
+                Modifier.padding(padding),
             )
             return@Scaffold
         }
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp)
+            contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp),
         ) {
             items(works, key = { it.url }) { work ->
                 ListItem(
@@ -86,10 +88,11 @@ fun PatrolScreen(container: AppContainer, onBack: () -> Unit, onStarted: () -> U
                         Text(
                             work.title.ifBlank { work.url },
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    // Where the next patrol picks up: the first episode still locked, or the last one read.
+                    // Where the next patrol picks up: the first episode still locked, or the last
+                    // one read.
                     supportingContent = {
                         Text(work.url, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     },
@@ -99,7 +102,7 @@ fun PatrolScreen(container: AppContainer, onBack: () -> Unit, onStarted: () -> U
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.animateItem()
+                    modifier = Modifier.animateItem(),
                 )
             }
         }

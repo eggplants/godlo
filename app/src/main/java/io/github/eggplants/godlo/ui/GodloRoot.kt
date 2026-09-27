@@ -92,18 +92,18 @@ private enum class TopLevel(
     val route: Any,
     @StringRes val label: Int,
     val icon: ImageVector,
-    val selectedIcon: ImageVector
+    val selectedIcon: ImageVector,
 ) {
     DOWNLOADS(
         DownloadsRoute,
         R.string.nav_downloads,
         Icons.Outlined.Download,
-        Icons.Filled.Download
+        Icons.Filled.Download,
     ),
     VIDEOS(VideosRoute(), R.string.nav_videos, Icons.Outlined.Movie, Icons.Filled.Movie),
     AUDIO(AudioRoute(), R.string.nav_audio, Icons.Outlined.Headphones, Icons.Filled.Headphones),
     IMAGES(ImagesRoute(), R.string.nav_images, Icons.Outlined.Image, Icons.Filled.Image),
-    SETTINGS(SettingsRoute, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings)
+    SETTINGS(SettingsRoute, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
 }
 
 @Composable
@@ -113,13 +113,14 @@ fun GodloRoot(container: AppContainer) {
     val destination = entry?.destination
     // Before the first destination is set, the start destination is what is about to show:
     // without this the navigation bar is missing, and taps on it lost, for the first frames.
-    val current = if (destination == null) {
-        TopLevel.DOWNLOADS
-    } else {
-        TopLevel.entries.firstOrNull { top ->
-            destination.hierarchy.any { it.hasRoute(top.route::class) }
+    val current =
+        if (destination == null) {
+            TopLevel.DOWNLOADS
+        } else {
+            TopLevel.entries.firstOrNull { top ->
+                destination.hierarchy.any { it.hasRoute(top.route::class) }
+            }
         }
-    }
     val tasks by container.downloads.tasks.collectAsStateWithLifecycle()
     val active = tasks.count { it.state == TaskState.QUEUED || it.state == TaskState.RUNNING }
     val nowPlaying by container.audio.state.collectAsStateWithLifecycle()
@@ -135,11 +136,12 @@ fun GodloRoot(container: AppContainer) {
         }
     }
 
-    val layoutType = if (current == null) {
-        NavigationSuiteType.None
-    } else {
-        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
-    }
+    val layoutType =
+        if (current == null) {
+            NavigationSuiteType.None
+        } else {
+            NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
+        }
     NavigationSuiteScaffold(
         layoutType = layoutType,
         navigationSuiteItems = {
@@ -155,67 +157,74 @@ fun GodloRoot(container: AppContainer) {
                         }
                     },
                     icon = {
-                        BadgedBox(badge = {
-                            if (top == TopLevel.DOWNLOADS &&
-                                active > 0
-                            ) {
-                                Badge { Text("$active") }
+                        BadgedBox(
+                            badge = {
+                                if (top == TopLevel.DOWNLOADS && active > 0) {
+                                    Badge { Text("$active") }
+                                }
                             }
-                        }) {
+                        ) {
                             Icon(
                                 if (selected) top.selectedIcon else top.icon,
-                                contentDescription = null
+                                contentDescription = null,
                             )
                         }
                     },
-                    label = { Text(stringResource(top.label)) }
+                    label = { Text(stringResource(top.label)) },
                 )
             }
-        }
+        },
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 NavHost(nav, startDestination = DownloadsRoute) {
                     composable<DownloadsRoute> {
-                        DownloadScreen(container, onOpen = { target ->
-                            // The folder in the library tab first, so that backing out of the
-                            // viewer lands among the download's neighbours.
-                            val folder = target.folder.joinToString("/")
-                            val tab = when (target) {
-                                is DownloadTarget.Album, is DownloadTarget.ImageFolder ->
-                                    ImagesRoute(folder)
+                        DownloadScreen(
+                            container,
+                            onOpen = { target ->
+                                // The folder in the library tab first, so that backing out of the
+                                // viewer lands among the download's neighbours.
+                                val folder = target.folder.joinToString("/")
+                                val tab =
+                                    when (target) {
+                                        is DownloadTarget.Album,
+                                        is DownloadTarget.ImageFolder -> ImagesRoute(folder)
 
-                                is DownloadTarget.Video -> VideosRoute(folder)
+                                        is DownloadTarget.Video -> VideosRoute(folder)
 
-                                is DownloadTarget.Audio -> AudioRoute(folder)
-                            }
-                            nav.navigate(tab) {
-                                // Like picking the tab, but at the folder instead of where it was left.
-                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                            }
-                            when (target) {
-                                is DownloadTarget.Album ->
-                                    nav.navigate(ReaderRoute(target.dir.absolutePath))
-
-                                is DownloadTarget.ImageFolder -> Unit
-
-                                is DownloadTarget.Video ->
-                                    nav.navigate(VideoRoute(target.file.absolutePath))
-
-                                is DownloadTarget.Audio -> {
-                                    container.audio.play(target.files, 0)
-                                    nav.navigate(NowPlayingRoute)
+                                        is DownloadTarget.Audio -> AudioRoute(folder)
+                                    }
+                                nav.navigate(tab) {
+                                    // Like picking the tab, but at the folder instead of where it
+                                    // was left.
+                                    popUpTo(nav.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
                                 }
-                            }
-                        })
+                                when (target) {
+                                    is DownloadTarget.Album ->
+                                        nav.navigate(ReaderRoute(target.dir.absolutePath))
+
+                                    is DownloadTarget.ImageFolder -> Unit
+
+                                    is DownloadTarget.Video ->
+                                        nav.navigate(VideoRoute(target.file.absolutePath))
+
+                                    is DownloadTarget.Audio -> {
+                                        container.audio.play(target.files, 0)
+                                        nav.navigate(NowPlayingRoute)
+                                    }
+                                }
+                            },
+                        )
                     }
                     composable<ImagesRoute> {
                         ImageLibraryScreen(
                             container,
                             initialPath = it.toRoute<ImagesRoute>().path,
                             onOpen = { dir -> nav.navigate(ReaderRoute(dir.absolutePath)) },
-                            onOpenPatrol = { nav.navigate(PatrolRoute) }
+                            onOpenPatrol = { nav.navigate(PatrolRoute) },
                         )
                     }
                     composable<AudioRoute> {
@@ -225,7 +234,7 @@ fun GodloRoot(container: AppContainer) {
                         VideoLibraryScreen(
                             container,
                             initialPath = it.toRoute<VideosRoute>().path,
-                            onOpen = { file -> nav.navigate(VideoRoute(file.absolutePath)) }
+                            onOpen = { file -> nav.navigate(VideoRoute(file.absolutePath)) },
                         )
                     }
                     composable<SettingsRoute> {
@@ -233,23 +242,29 @@ fun GodloRoot(container: AppContainer) {
                             container,
                             onOpenConfig = { nav.navigate(ConfigRoute(it.name)) },
                             onOpenAndroidLicenses = { nav.navigate(AndroidLicensesRoute) },
-                            onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) }
+                            onOpenPythonLicenses = { nav.navigate(PythonLicensesRoute) },
                         )
                     }
                     composable<PatrolRoute> {
-                        PatrolScreen(container, onBack = { nav.popBackStack() }, onStarted = {
-                            // To the queue, where the patrol shows how it goes.
-                            nav.navigate(DownloadsRoute) {
-                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                            }
-                        })
+                        PatrolScreen(
+                            container,
+                            onBack = { nav.popBackStack() },
+                            onStarted = {
+                                // To the queue, where the patrol shows how it goes.
+                                nav.navigate(DownloadsRoute) {
+                                    popUpTo(nav.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
                     }
                     composable<ConfigRoute> {
                         ConfigEditorScreen(
                             container,
                             ConfigFile.valueOf(it.toRoute<ConfigRoute>().file),
-                            onBack = { nav.popBackStack() }
+                            onBack = { nav.popBackStack() },
                         )
                     }
                     composable<AndroidLicensesRoute> {
@@ -267,13 +282,17 @@ fun GodloRoot(container: AppContainer) {
                                 nav.navigate(ReaderRoute(dir.absolutePath)) {
                                     popUpTo<ReaderRoute> { inclusive = true }
                                 }
-                            }
+                            },
                         )
                     }
                     composable<VideoRoute> {
-                        VideoPlayerScreen(container, it.toRoute<VideoRoute>().path, onBack = {
-                            nav.popBackStack()
-                        })
+                        VideoPlayerScreen(
+                            container,
+                            it.toRoute<VideoRoute>().path,
+                            onBack = {
+                                nav.popBackStack()
+                            },
+                        )
                     }
                     composable<NowPlayingRoute> {
                         NowPlayingScreen(container, onBack = { nav.popBackStack() })

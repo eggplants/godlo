@@ -19,9 +19,10 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ConfigTreeTest {
-    private val tree = parseConfigJson(
-        """{"extractor": {"pixiv": {"ugoira": true}, "skip": "abort:3"}, "list": [1, 2.5, null]}"""
-    )
+    private val tree =
+        parseConfigJson(
+            """{"extractor": {"pixiv": {"ugoira": true}, "skip": "abort:3"}, "list": [1, 2.5, null]}"""
+        )
     private val extractor = PathStep.Key("extractor")
     private val list = PathStep.Key("list")
 
@@ -33,11 +34,11 @@ class ConfigTreeTest {
         assertEquals(ValueType.NULL, tree.at(listOf(list, PathStep.Index(2)))!!.valueType)
         assertEquals(
             ValueType.BOOLEAN,
-            tree.at(listOf(extractor, PathStep.Key("pixiv"), PathStep.Key("ugoira")))!!.valueType
+            tree.at(listOf(extractor, PathStep.Key("pixiv"), PathStep.Key("ugoira")))!!.valueType,
         )
         assertEquals(
             ValueType.STRING,
-            tree.at(listOf(extractor, PathStep.Key("skip")))!!.valueType
+            tree.at(listOf(extractor, PathStep.Key("skip")))!!.valueType,
         )
         assertNull(tree.at(listOf(PathStep.Key("missing"))))
     }
@@ -112,7 +113,7 @@ class ConfigTreeTest {
         val text = formatConfigJson(parseConfigJson("""{"a": [1, 1.5, 12345678901234567890]}"""))
         assertEquals(
             "{\n    \"a\": [\n        1,\n        1.5,\n        12345678901234567890\n    ]\n}\n",
-            text
+            text,
         )
     }
 }

@@ -16,22 +16,29 @@ plugins {
 val dirtyFlag = if (providers.gradleProperty("godlo.noDirty").isPresent) null else "--dirty"
 
 val gitDescribe: String = runCatching {
-    providers.exec {
-        commandLine(
-            listOfNotNull("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", dirtyFlag)
-        )
-        isIgnoreExitValue = true
-    }.standardOutput.asText.get().trim()
-}.getOrDefault("")
+    providers
+        .exec {
+            commandLine(
+                listOfNotNull("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", dirtyFlag)
+            )
+            isIgnoreExitValue = true
+        }
+        .standardOutput
+        .asText
+        .get()
+        .trim()
+}
+    .getOrDefault("")
 
 val gitVersion = Regex("""^v(\d+\.\d+\.\d+)-(\d+)(.*)$""").find(gitDescribe)?.destructured
 
 val gitVersionName: String = gitVersion?.let { (name, _, rest) -> name + rest } ?: "0.0.0"
 
-val gitVersionCode: Int = gitVersion?.let { (_, code, _) ->
-    // Android requires a versionCode of at least 1.
-    code.toInt().also { require(it >= 1) { "versionCode must be 1 or more: $gitDescribe" } }
-} ?: 1
+val gitVersionCode: Int =
+    gitVersion?.let { (_, code, _) ->
+        // Android requires a versionCode of at least 1.
+        code.toInt().also { require(it >= 1) { "versionCode must be 1 or more: $gitDescribe" } }
+    } ?: 1
 
 android {
     namespace = "io.github.eggplants.godlo"
@@ -106,14 +113,16 @@ android {
 // Chaquopy needs a Python of the same minor version at build time. It looks for `python3.13`
 // on PATH, which Android Studio launched from a desktop entry does not share with the shell,
 // so fall back to where mise (see mise.toml) installs it. `-Pgodlo.buildPython=...` overrides.
-val hostPython: String? = providers.gradleProperty("godlo.buildPython").orNull
-    ?: listOfNotNull(
-        System.getenv("MISE_DATA_DIR"),
-        System.getenv("XDG_DATA_HOME")?.let { "$it/mise" },
-        "${System.getProperty("user.home")}/.local/share/mise"
-    ).map { file("$it/installs/python/3.13/bin/python3.13") }
-        .firstOrNull { it.canExecute() }
-        ?.absolutePath
+val hostPython: String? =
+    providers.gradleProperty("godlo.buildPython").orNull
+        ?: listOfNotNull(
+                System.getenv("MISE_DATA_DIR"),
+                System.getenv("XDG_DATA_HOME")?.let { "$it/mise" },
+                "${System.getProperty("user.home")}/.local/share/mise",
+            )
+            .map { file("$it/installs/python/3.13/bin/python3.13") }
+            .firstOrNull { it.canExecute() }
+            ?.absolutePath
 
 chaquopy {
     defaultConfig {
@@ -173,24 +182,19 @@ chaquopy {
 }
 
 /**
- * Writes python_licenses.json into the APK's assets: what pip installed, with its licenses,
- * which AboutLibraries does not see. See native/licenses/python_licenses.py.
+ * Writes python_licenses.json into the APK's assets: what pip installed, with its licenses, which
+ * AboutLibraries does not see. See native/licenses/python_licenses.py.
  */
 abstract class PythonLicenses : DefaultTask() {
-    @get:InputDirectory
-    abstract val pipDir: DirectoryProperty
+    @get:InputDirectory abstract val pipDir: DirectoryProperty
 
-    @get:InputFile
-    abstract val script: RegularFileProperty
+    @get:InputFile abstract val script: RegularFileProperty
 
-    @get:Input
-    abstract val python: Property<String>
+    @get:Input abstract val python: Property<String>
 
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
 
-    @get:Inject
-    abstract val exec: ExecOperations
+    @get:Inject abstract val exec: ExecOperations
 
     @TaskAction
     fun generate() {
@@ -199,7 +203,7 @@ abstract class PythonLicenses : DefaultTask() {
                 python.get(),
                 script.get().asFile.absolutePath,
                 pipDir.get().asFile.absolutePath,
-                outputDir.file("python_licenses.json").get().asFile.absolutePath
+                outputDir.file("python_licenses.json").get().asFile.absolutePath,
             )
         }
     }
@@ -209,34 +213,40 @@ abstract class PythonLicenses : DefaultTask() {
 // binaries). Without the stubs youtubedl-android's own libwebp, aligned to 4 KB, would go into
 // the APK and ffmpeg would not load on 16 KB page devices, and without the wheels pip fails
 // less clearly, so stop the build first.
-val nativeBuilds = listOf("arm64-v8a", "x86_64").flatMap { abi ->
-    val wheelAbi = abi.replace('-', '_')
-    listOf(
-        file("src/main/jniLibs/$abi/libwebp.so"),
-        file("src/main/jniLibs/$abi/libwebpmux.so"),
-        rootProject.file(
-            "native/wheels/chaquopy_libjpeg-1.5.3+16k-py3-none-android_24_$wheelAbi.whl"
-        ),
-        rootProject.file(
-            "native/wheels/chaquopy_freetype-2.9.1+16k-py3-none-android_24_$wheelAbi.whl"
+val nativeBuilds =
+    listOf("arm64-v8a", "x86_64").flatMap { abi ->
+        val wheelAbi = abi.replace('-', '_')
+        listOf(
+            file("src/main/jniLibs/$abi/libwebp.so"),
+            file("src/main/jniLibs/$abi/libwebpmux.so"),
+            rootProject.file(
+                "native/wheels/chaquopy_libjpeg-1.5.3+16k-py3-none-android_24_$wheelAbi.whl"
+            ),
+            rootProject.file(
+                "native/wheels/chaquopy_freetype-2.9.1+16k-py3-none-android_24_$wheelAbi.whl"
+            ),
         )
-    )
-}
-val checkNativeBuilds = tasks.register("checkNativeBuilds") {
-    doLast {
-        val missing = nativeBuilds.filterNot { it.isFile }
-        if (missing.isNotEmpty()) {
-            throw GradleException(
-                "Missing ${missing.joinToString { it.relativeTo(rootDir).path }}: " +
-                    "run `mise run build:native` (native/build.sh) first."
-            )
+    }
+val checkNativeBuilds =
+    tasks.register("checkNativeBuilds") {
+        doLast {
+            val missing = nativeBuilds.filterNot { it.isFile }
+            if (missing.isNotEmpty()) {
+                throw GradleException(
+                    "Missing ${missing.joinToString { it.relativeTo(rootDir).path }}: " +
+                        "run `mise run build:native` (native/build.sh) first."
+                )
+            }
         }
     }
-}
+
 tasks.named("preBuild") { dependsOn(checkNativeBuilds) }
-tasks.matching { it.name.matches(Regex("install\\w*PythonRequirements")) }.configureEach {
-    dependsOn(checkNativeBuilds)
-}
+
+tasks
+    .matching { it.name.matches(Regex("install\\w*PythonRequirements")) }
+    .configureEach {
+        dependsOn(checkNativeBuilds)
+    }
 
 // The license list of the Maven dependencies, for the about screen. Offline, so that the build
 // reads nothing but the POMs and gives the same list every time.
@@ -247,13 +257,14 @@ aboutLibraries {
 androidComponents {
     onVariants { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
-        val task = tasks.register<PythonLicenses>("generate${name}PythonLicenses") {
-            dependsOn("install${name}PythonRequirements")
-            pipDir.set(layout.buildDirectory.dir("python/pip/${variant.name}/common"))
-            script.set(rootProject.file("native/licenses/python_licenses.py"))
-            python.set(hostPython ?: "python3.13")
-            outputDir.set(layout.buildDirectory.dir("generated/pythonLicenses/${variant.name}"))
-        }
+        val task =
+            tasks.register<PythonLicenses>("generate${name}PythonLicenses") {
+                dependsOn("install${name}PythonRequirements")
+                pipDir.set(layout.buildDirectory.dir("python/pip/${variant.name}/common"))
+                script.set(rootProject.file("native/licenses/python_licenses.py"))
+                python.set(hostPython ?: "python3.13")
+                outputDir.set(layout.buildDirectory.dir("generated/pythonLicenses/${variant.name}"))
+            }
         variant.sources.assets?.addGeneratedSourceDirectory(task, PythonLicenses::outputDir)
     }
 }

@@ -92,31 +92,33 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
     }
 
     // The other videos of the same folder play next, in the order the video tab lists them.
-    val player = remember(path) {
-        val videos = container.library.library.value.video
-        val folder = videos.firstOrNull { it.file.absolutePath == path }?.path?.dropLast(1)
-        val siblings = folder?.let { dir ->
-            LibraryTree.media.children(videos, dir).mapNotNull {
-                (it as? TreeNode.Leaf)?.item?.file
+    val player =
+        remember(path) {
+            val videos = container.library.library.value.video
+            val folder = videos.firstOrNull { it.file.absolutePath == path }?.path?.dropLast(1)
+            val siblings = folder?.let { dir ->
+                LibraryTree.media.children(videos, dir).mapNotNull {
+                    (it as? TreeNode.Leaf)?.item?.file
+                }
             }
+            val playlist = siblings.orEmpty().ifEmpty { listOf(File(path)) }
+            val start = playlist.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0)
+            ExoPlayer.Builder(context)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                        .build(),
+                    true,
+                )
+                .setHandleAudioBecomingNoisy(true)
+                .build()
+                .apply {
+                    setMediaItems(playlist.map { it.toMediaItem() }, start, 0)
+                    prepare()
+                    playWhenReady = true
+                }
         }
-        val playlist = siblings.orEmpty().ifEmpty { listOf(File(path)) }
-        val start = playlist.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0)
-        ExoPlayer.Builder(context)
-            .setAudioAttributes(
-                AudioAttributes.Builder().setUsage(
-                    C.USAGE_MEDIA
-                ).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
-                true
-            )
-            .setHandleAudioBecomingNoisy(true)
-            .build()
-            .apply {
-                setMediaItems(playlist.map { it.toMediaItem() }, start, 0)
-                prepare()
-                playWhenReady = true
-            }
-    }
 
     DisposableEffect(player) {
         // Stopped, not just paused: in picture-in-picture the activity is paused but still seen.
@@ -124,20 +126,21 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
             if (event == Lifecycle.Event.ON_STOP) player.pause()
         }
         lifecycle.addObserver(observer)
-        val listener = object : Player.Listener {
-            // The header names the video playing, which changes as the folder plays on.
-            override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
-                item?.mediaId?.let { playing = File(it) }
-            }
+        val listener =
+            object : Player.Listener {
+                // The header names the video playing, which changes as the folder plays on.
+                override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
+                    item?.mediaId?.let { playing = File(it) }
+                }
 
-            override fun onIsPlayingChanged(value: Boolean) {
-                isPlaying = value
-            }
+                override fun onIsPlayingChanged(value: Boolean) {
+                    isPlaying = value
+                }
 
-            override fun onVideoSizeChanged(size: VideoSize) {
-                pictureInPictureAspect(size)?.let { aspect = it }
+                override fun onVideoSizeChanged(size: VideoSize) {
+                    pictureInPictureAspect(size)?.let { aspect = it }
+                }
             }
-        }
         player.addListener(listener)
         // Lets the picture-in-picture window, headphones and the like play and pause it.
         val session = MediaSession.Builder(context, player).setId("video").build()
@@ -155,9 +158,10 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
             if (isPlaying) pictureInPictureParams(aspect, videoBounds) else null
     }
     DisposableEffect(activity) {
-        val onChange = Consumer<PictureInPictureModeChangedInfo> {
-            inPictureInPicture = it.isInPictureInPictureMode
-        }
+        val onChange =
+            Consumer<PictureInPictureModeChangedInfo> {
+                inPictureInPicture = it.isInPictureInPictureMode
+            }
         activity?.addOnPictureInPictureModeChangedListener(onChange)
         onDispose {
             activity?.removeOnPictureInPictureModeChangedListener(onChange)
@@ -167,9 +171,10 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
 
     // The status bar comes and goes with the controls, as in the reader; the navigation bar
     // stays away, where it would cover the player's own bottom bar.
-    val bars = remember(view) {
-        activity?.window?.let { WindowCompat.getInsetsController(it, view) }
-    }
+    val bars =
+        remember(view) {
+            activity?.window?.let { WindowCompat.getInsetsController(it, view) }
+        }
     LaunchedEffect(controlsVisible, inPictureInPicture) {
         bars?.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -217,26 +222,25 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
             update = { it.useController = !inPictureInPicture },
             // Keeps the controls clear of a camera hole in the screen. Only that: padding for the
             // status bar too would move the video each time the controls come and go.
-            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)
+            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout),
         )
         // Comes and goes with the player's controls, as the reader's header does with a tap.
         AnimatedVisibility(
             visible = controlsVisible && !inPictureInPicture,
             enter = fadeIn() + slideInVertically { -it },
             exit = fadeOut() + slideOutVertically { -it },
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier.align(Alignment.TopCenter),
         ) {
             Surface(color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)) {
                 Row(
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .windowInsetsPadding(
                             WindowInsets.safeDrawing.only(
                                 WindowInsetsSides.Top + WindowInsetsSides.Horizontal
                             )
                         )
                         .padding(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
@@ -246,24 +250,27 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
                             playing.nameWithoutExtension,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             playing.parentFile?.name.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     if (activity?.supportsPictureInPicture == true) {
-                        IconButton(onClick = {
-                            activity.pictureInPicture = pictureInPictureParams(aspect, videoBounds)
-                            activity.enterPictureInPicture()
-                        }) {
+                        IconButton(
+                            onClick = {
+                                activity.pictureInPicture =
+                                    pictureInPictureParams(aspect, videoBounds)
+                                activity.enterPictureInPicture()
+                            }
+                        ) {
                             Icon(
                                 Icons.Filled.PictureInPictureAlt,
-                                stringResource(R.string.picture_in_picture)
+                                stringResource(R.string.picture_in_picture),
                             )
                         }
                     }
@@ -274,12 +281,16 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
 }
 
 private fun pictureInPictureParams(aspect: Rational, bounds: Rect?): PictureInPictureParams =
-    PictureInPictureParams.Builder().setAspectRatio(aspect).setSourceRectHint(bounds).apply {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            setAutoEnterEnabled(true)
-            setSeamlessResizeEnabled(true)
+    PictureInPictureParams.Builder()
+        .setAspectRatio(aspect)
+        .setSourceRectHint(bounds)
+        .apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                setAutoEnterEnabled(true)
+                setSeamlessResizeEnabled(true)
+            }
         }
-    }.build()
+        .build()
 
 /** The video's shape, within what a picture-in-picture window can take (2.39:1 to 1:2.39). */
 private fun pictureInPictureAspect(size: VideoSize): Rational? {

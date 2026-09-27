@@ -107,9 +107,10 @@ import kotlinx.serialization.json.boolean
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -> Unit) {
-    val vm: ConfigEditorViewModel = viewModel(key = config.name) {
-        ConfigEditorViewModel(container, config)
-    }
+    val vm: ConfigEditorViewModel =
+        viewModel(key = config.name) {
+            ConfigEditorViewModel(container, config)
+        }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -128,43 +129,42 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
         }
     }
 
-    val importFile = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            runCatching {
+    val importFile =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch {
+                runCatching {
+                        withContext(Dispatchers.IO) {
+                            context.contentResolver.openInputStream(uri)!!.use {
+                                it.readBytes().decodeToString()
+                            }
+                        }
+                    }
+                    .onSuccess(vm::import)
+                    .onFailure {
+                        vm.showMessage(EditorMessage(R.string.config_error, it.message ?: ""))
+                    }
+            }
+        }
+    // Any other type makes the file picker append its extension to the name.
+    val mime =
+        if (config.format == ConfigFormat.COOKIES) {
+            "text/plain"
+        } else {
+            "application/octet-stream"
+        }
+    val exportFile =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(mime)) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            vm.withContent { text ->
                 withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)!!.use {
-                        it.readBytes().decodeToString()
+                    context.contentResolver.openOutputStream(uri, "wt")!!.use {
+                        it.write(text.toByteArray())
                     }
                 }
-            }.onSuccess(vm::import).onFailure {
-                vm.showMessage(EditorMessage(R.string.config_error, it.message ?: ""))
+                vm.showMessage(EditorMessage(R.string.config_exported))
             }
         }
-    }
-    // Any other type makes the file picker append its extension to the name.
-    val mime = if (config.format ==
-        ConfigFormat.COOKIES
-    ) {
-        "text/plain"
-    } else {
-        "application/octet-stream"
-    }
-    val exportFile = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(mime)
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        vm.withContent { text ->
-            withContext(Dispatchers.IO) {
-                context.contentResolver.openOutputStream(uri, "wt")!!.use {
-                    it.write(text.toByteArray())
-                }
-            }
-            vm.showMessage(EditorMessage(R.string.config_exported))
-        }
-    }
 
     fun leave() {
         if (state.dirty) confirmDiscard = true else onBack()
@@ -196,7 +196,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                             }
                             MenuItem(
                                 R.string.config_import_clipboard,
-                                Icons.Outlined.ContentPaste
+                                Icons.Outlined.ContentPaste,
                             ) {
                                 menu = false
                                 val text = readClipboard(context)
@@ -232,7 +232,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                             }
                         }
                     }
-                }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -254,11 +254,11 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                         onDismiss = { adding = false },
                         onConfirm = { key, value ->
                             vm.editTree { it.add(state.path, key.orEmpty(), value) }
-                        }
+                        },
                     )
                 }
             }
-        }
+        },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
             if (config.visual) {
@@ -278,7 +278,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                                         }
                                     )
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -287,28 +287,31 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                 stringResource(config.hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             val tree = state.tree
             when {
-                state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                state.loading ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
 
-                state.mode == EditorMode.VISUAL && tree != null -> VisualEditor(
-                    tree = tree,
-                    path = state.path,
-                    config = config,
-                    onNavigate = vm::navigate,
-                    onEdit = vm::editTree
-                )
+                state.mode == EditorMode.VISUAL && tree != null ->
+                    VisualEditor(
+                        tree = tree,
+                        path = state.path,
+                        config = config,
+                        onNavigate = vm::navigate,
+                        onEdit = vm::editTree,
+                    )
 
-                else -> CodeEditor(
-                    text = state.text,
-                    onChange = vm::editText,
-                    format = config.format,
-                    placeholder = stringResource(R.string.config_text_empty)
-                )
+                else ->
+                    CodeEditor(
+                        text = state.text,
+                        onChange = vm::editText,
+                        format = config.format,
+                        placeholder = stringResource(R.string.config_text_empty),
+                    )
             }
         }
     }
@@ -321,9 +324,10 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         problem,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = FontFamily.Monospace
-                        )
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
                     )
                     Text(stringResource(R.string.config_invalid_body))
                 }
@@ -335,7 +339,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
             },
             dismissButton = {
                 TextButton(onClick = vm::dismissProblem) { Text(stringResource(R.string.cancel)) }
-            }
+            },
         )
     }
     state.refused?.let { refused ->
@@ -349,14 +353,15 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                         Column {
                             Text(
                                 setting,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = FontFamily.Monospace
-                                )
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = FontFamily.Monospace
+                                    ),
                             )
                             Text(
                                 stringResource(refusal.reason),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -369,7 +374,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
             },
             dismissButton = {
                 TextButton(onClick = vm::dismissProblem) { Text(stringResource(R.string.cancel)) }
-            }
+            },
         )
     }
     if (state.conflict) {
@@ -379,10 +384,14 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
             text = { Text(stringResource(R.string.config_conflict_body, config.fileName)) },
             confirmButton = {
                 Row {
-                    TextButton(onClick = {
-                        vm.dismissProblem()
-                        vm.load()
-                    }) { Text(stringResource(R.string.config_reload)) }
+                    TextButton(
+                        onClick = {
+                            vm.dismissProblem()
+                            vm.load()
+                        }
+                    ) {
+                        Text(stringResource(R.string.config_reload))
+                    }
                     TextButton(onClick = { vm.save(check = false, overwrite = true) }) {
                         Text(stringResource(R.string.config_overwrite))
                     }
@@ -390,7 +399,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
             },
             dismissButton = {
                 TextButton(onClick = vm::dismissProblem) { Text(stringResource(R.string.cancel)) }
-            }
+            },
         )
     }
     if (confirmDiscard) {
@@ -399,23 +408,27 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
             title = { Text(stringResource(R.string.config_discard_title)) },
             text = { Text(stringResource(R.string.config_discard_body)) },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDiscard = false
-                    onBack()
-                }) { Text(stringResource(R.string.config_discard)) }
+                TextButton(
+                    onClick = {
+                        confirmDiscard = false
+                        onBack()
+                    }
+                ) {
+                    Text(stringResource(R.string.config_discard))
+                }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDiscard = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
     if (confirmDelete) {
         ConfirmDeleteDialog(
             name = config.fileName,
             onConfirm = vm::delete,
-            onDismiss = { confirmDelete = false }
+            onDismiss = { confirmDelete = false },
         )
     }
 }
@@ -425,7 +438,7 @@ private fun MenuItem(text: Int, icon: ImageVector, onClick: () -> Unit) {
     DropdownMenuItem(
         text = { Text(stringResource(text)) },
         leadingIcon = { Icon(icon, null) },
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -436,23 +449,25 @@ private fun VisualEditor(
     path: List<PathStep>,
     config: ConfigFile,
     onNavigate: (List<PathStep>) -> Unit,
-    onEdit: ((JsonElement) -> JsonElement) -> Unit
+    onEdit: ((JsonElement) -> JsonElement) -> Unit,
 ) {
     // Back goes up a level before it leaves the editor.
     BackHandler(enabled = path.isNotEmpty()) { onNavigate(path.dropLast(1)) }
     var editing by remember { mutableStateOf<List<PathStep>?>(null) }
     val node = tree.at(path)
-    val entries: List<Pair<PathStep, JsonElement>> = when (node) {
-        is JsonObject -> node.map { (key, value) -> PathStep.Key(key) to value }
-        is JsonArray -> node.mapIndexed { i, value -> PathStep.Index(i) to value }
-        else -> emptyList()
-    }
+    val entries: List<Pair<PathStep, JsonElement>> =
+        when (node) {
+            is JsonObject -> node.map { (key, value) -> PathStep.Key(key) to value }
+            is JsonArray -> node.mapIndexed { i, value -> PathStep.Index(i) to value }
+            else -> emptyList()
+        }
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+            Modifier.fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(onClick = { onNavigate(emptyList()) }, enabled = path.isNotEmpty()) {
                 Text(stringResource(R.string.config_root))
@@ -461,12 +476,14 @@ private fun VisualEditor(
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 TextButton(
                     onClick = { onNavigate(path.take(i + 1)) },
-                    enabled = i < path.lastIndex
-                ) { Text(step.label) }
+                    enabled = i < path.lastIndex,
+                ) {
+                    Text(step.label)
+                }
             }
         }
         HorizontalDivider()
@@ -475,13 +492,13 @@ private fun VisualEditor(
                 stringResource(R.string.config_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(24.dp),
             )
         }
         LazyColumn(
             Modifier.fillMaxSize(),
             // Clear of the add button.
-            contentPadding = PaddingValues(bottom = 88.dp)
+            contentPadding = PaddingValues(bottom = 88.dp),
         ) {
             items(entries, key = { (step, _) -> step.toString() }) { (step, value) ->
                 val here = path + step
@@ -496,7 +513,7 @@ private fun VisualEditor(
                     onToggle = { on -> onEdit { it.update(here) { JsonPrimitive(on) } } },
                     onEdit = { editing = here },
                     onMove = { by -> onEdit { it.move(here, by) } },
-                    onDelete = { onEdit { it.remove(here) } }
+                    onDelete = { onEdit { it.remove(here) } },
                 )
             }
         }
@@ -520,16 +537,17 @@ private fun VisualEditor(
                     val at = if (key != null) target.dropLast(1) + PathStep.Key(key) else target
                     renamed.update(at) { changed }
                 }
-            }
+            },
         )
     }
 }
 
 private val PathStep.label: String
-    get() = when (this) {
-        is PathStep.Key -> name
-        is PathStep.Index -> "[$index]"
-    }
+    get() =
+        when (this) {
+            is PathStep.Key -> name
+            is PathStep.Index -> "[$index]"
+        }
 
 @Composable
 private fun EntryRow(
@@ -541,7 +559,7 @@ private fun EntryRow(
     onToggle: (Boolean) -> Unit,
     onEdit: () -> Unit,
     onMove: (Int) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     val type = value.valueType
     var menu by remember { mutableStateOf(false) }
@@ -550,32 +568,35 @@ private fun EntryRow(
             Text(step.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
         },
         supportingContent = {
-            val summary = when (type) {
-                ValueType.OBJECT -> pluralStringResource(
-                    R.plurals.entries,
-                    (value as JsonObject).size,
-                    value.size
-                )
+            val summary =
+                when (type) {
+                    ValueType.OBJECT ->
+                        pluralStringResource(
+                            R.plurals.entries,
+                            (value as JsonObject).size,
+                            value.size,
+                        )
 
-                ValueType.ARRAY -> pluralStringResource(
-                    R.plurals.entries,
-                    (value as JsonArray).size,
-                    value.size
-                )
+                    ValueType.ARRAY ->
+                        pluralStringResource(
+                            R.plurals.entries,
+                            (value as JsonArray).size,
+                            value.size,
+                        )
 
-                ValueType.BOOLEAN -> null
+                    ValueType.BOOLEAN -> null
 
-                ValueType.NULL -> "null"
+                    ValueType.NULL -> "null"
 
-                else -> value.editText.ifEmpty { "\"\"" }
-            }
+                    else -> value.editText.ifEmpty { "\"\"" }
+                }
             Column {
                 if (summary != null) {
                     Text(
                         summary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        fontFamily = if (type.container) null else FontFamily.Monospace
+                        fontFamily = if (type.container) null else FontFamily.Monospace,
                     )
                 }
                 // Only from a file written elsewhere: import and the editor keep these out.
@@ -583,9 +604,9 @@ private fun EntryRow(
                     Text(
                         stringResource(
                             R.string.config_entry_refused,
-                            stringResource(refusal.reason)
+                            stringResource(refusal.reason),
                         ),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -609,7 +630,7 @@ private fun EntryRow(
                             onClick = {
                                 menu = false
                                 onEdit()
-                            }
+                            },
                         )
                         if (step is PathStep.Index) {
                             if (step.index > 0) {
@@ -618,7 +639,7 @@ private fun EntryRow(
                                     onClick = {
                                         menu = false
                                         onMove(-1)
-                                    }
+                                    },
                                 )
                             }
                             if (!last) {
@@ -627,7 +648,7 @@ private fun EntryRow(
                                     onClick = {
                                         menu = false
                                         onMove(1)
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -635,42 +656,44 @@ private fun EntryRow(
                             text = {
                                 Text(
                                     stringResource(R.string.delete),
-                                    color = MaterialTheme.colorScheme.error
+                                    color = MaterialTheme.colorScheme.error,
                                 )
                             },
                             onClick = {
                                 menu = false
                                 onDelete()
-                            }
+                            },
                         )
                     }
                 }
             }
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable(onClick = onOpen)
+        modifier = Modifier.clickable(onClick = onOpen),
     )
 }
 
 private val ValueType.icon: ImageVector
-    get() = when (this) {
-        ValueType.STRING -> Icons.Outlined.Abc
-        ValueType.NUMBER -> Icons.Outlined.Numbers
-        ValueType.BOOLEAN -> Icons.Outlined.ToggleOn
-        ValueType.OBJECT -> Icons.Outlined.DataObject
-        ValueType.ARRAY -> Icons.Outlined.DataArray
-        ValueType.NULL -> Icons.Outlined.DoNotDisturb
-    }
+    get() =
+        when (this) {
+            ValueType.STRING -> Icons.Outlined.Abc
+            ValueType.NUMBER -> Icons.Outlined.Numbers
+            ValueType.BOOLEAN -> Icons.Outlined.ToggleOn
+            ValueType.OBJECT -> Icons.Outlined.DataObject
+            ValueType.ARRAY -> Icons.Outlined.DataArray
+            ValueType.NULL -> Icons.Outlined.DoNotDisturb
+        }
 
 private val ValueType.label: Int
-    get() = when (this) {
-        ValueType.STRING -> R.string.config_type_string
-        ValueType.NUMBER -> R.string.config_type_number
-        ValueType.BOOLEAN -> R.string.config_type_boolean
-        ValueType.OBJECT -> R.string.config_type_object
-        ValueType.ARRAY -> R.string.config_type_array
-        ValueType.NULL -> R.string.config_type_null
-    }
+    get() =
+        when (this) {
+            ValueType.STRING -> R.string.config_type_string
+            ValueType.NUMBER -> R.string.config_type_number
+            ValueType.BOOLEAN -> R.string.config_type_boolean
+            ValueType.OBJECT -> R.string.config_type_object
+            ValueType.ARRAY -> R.string.config_type_array
+            ValueType.NULL -> R.string.config_type_null
+        }
 
 /**
  * Asks for a value, and for its key when [key] is not null (an object's entry).
@@ -687,27 +710,30 @@ private fun ValueDialog(
     toml: Boolean,
     refusalOf: (String) -> Refusal?,
     onDismiss: () -> Unit,
-    onConfirm: (String?, JsonElement) -> Unit
+    onConfirm: (String?, JsonElement) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(key.orEmpty()) }
     var type by rememberSaveable { mutableStateOf(value.valueType) }
     var text by rememberSaveable { mutableStateOf(value.editText) }
-    val nameError = when {
-        key == null -> null
+    val nameError =
+        when {
+            key == null -> null
 
-        name.isEmpty() -> stringResource(R.string.config_key_empty)
+            name.isEmpty() -> stringResource(R.string.config_key_empty)
 
-        name in siblings -> stringResource(R.string.config_key_exists, name)
+            name in siblings -> stringResource(R.string.config_key_exists, name)
 
-        else -> refusalOf(name)?.let {
-            stringResource(R.string.config_key_refused, name, stringResource(it.reason))
+            else ->
+                refusalOf(name)?.let {
+                    stringResource(R.string.config_key_refused, name, stringResource(it.reason))
+                }
         }
-    }
-    val result = if (type == value.valueType && type.container) {
-        value
-    } else {
-        scalarOf(type, text)
-    }
+    val result =
+        if (type == value.valueType && type.container) {
+            value
+        } else {
+            scalarOf(type, text)
+        }
     // TOML has no null.
     val types = ValueType.entries.filter { !toml || it != ValueType.NULL }
 
@@ -724,7 +750,7 @@ private fun ValueDialog(
                         isError = nameError != null,
                         supportingText = nameError?.let { { Text(it) } },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -733,39 +759,44 @@ private fun ValueDialog(
                             selected = type == option,
                             onClick = { type = option },
                             label = { Text(stringResource(option.label)) },
-                            leadingIcon = { Icon(option.icon, null, Modifier.size(18.dp)) }
+                            leadingIcon = { Icon(option.icon, null, Modifier.size(18.dp)) },
                         )
                     }
                 }
                 when (type) {
-                    ValueType.STRING, ValueType.NUMBER -> OutlinedTextField(
-                        value = text,
-                        onValueChange = { text = it },
-                        label = { Text(stringResource(R.string.config_value)) },
-                        isError = result == null,
-                        singleLine = type == ValueType.NUMBER,
-                        maxLines = 8,
-                        keyboardOptions = if (type == ValueType.NUMBER) {
-                            KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        } else {
-                            KeyboardOptions(autoCorrectEnabled = false)
-                        },
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    ValueType.BOOLEAN -> Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(stringResource(R.string.config_value), Modifier.weight(1f))
-                        Switch(
-                            checked = text == "true",
-                            onCheckedChange = { text = it.toString() }
+                    ValueType.STRING,
+                    ValueType.NUMBER ->
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            label = { Text(stringResource(R.string.config_value)) },
+                            isError = result == null,
+                            singleLine = type == ValueType.NUMBER,
+                            maxLines = 8,
+                            keyboardOptions =
+                                if (type == ValueType.NUMBER) {
+                                    KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                                } else {
+                                    KeyboardOptions(autoCorrectEnabled = false)
+                                },
+                            textStyle =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                    }
+
+                    ValueType.BOOLEAN ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.config_value), Modifier.weight(1f))
+                            Switch(
+                                checked = text == "true",
+                                onCheckedChange = { text = it.toString() },
+                            )
+                        }
 
                     else -> Unit
                 }
@@ -777,12 +808,14 @@ private fun ValueDialog(
                 onClick = {
                     onConfirm(if (key != null) name else null, result!!)
                     onDismiss()
-                }
-            ) { Text(stringResource(R.string.ok)) }
+                },
+            ) {
+                Text(stringResource(R.string.ok))
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        }
+        },
     )
 }
 
@@ -796,9 +829,10 @@ private fun readClipboard(context: Context): String? {
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val clip = ClipData.newPlainText(label, text)
     // Accounts and cookies: kept out of the clipboard preview and keyboard suggestions.
-    clip.description.extras = PersistableBundle().apply {
-        // ClipDescription.EXTRA_IS_SENSITIVE, which older versions simply ignore.
-        putBoolean("android.content.extra.IS_SENSITIVE", true)
-    }
+    clip.description.extras =
+        PersistableBundle().apply {
+            // ClipDescription.EXTRA_IS_SENSITIVE, which older versions simply ignore.
+            putBoolean("android.content.extra.IS_SENSITIVE", true)
+        }
     context.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
 }

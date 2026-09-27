@@ -16,7 +16,7 @@ class ReaderModelTest {
     fun singlePagesWhenSpreadIsOff() {
         assertEquals(
             listOf(listOf(0), listOf(1), listOf(2)),
-            ReaderModel.spreads(pages(false, false, false), false, true)
+            ReaderModel.spreads(pages(false, false, false), false, true),
         )
     }
 
@@ -46,7 +46,7 @@ class ReaderModelTest {
         val names = listOf("10.jpg", "2.jpg", "1.jpg", "010.jpg", "a2.png", "a10.png")
         assertEquals(
             listOf("1.jpg", "2.jpg", "10.jpg", "010.jpg", "a2.png", "a10.png"),
-            names.sortedWith(NaturalOrder)
+            names.sortedWith(NaturalOrder),
         )
     }
 }

@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import io.github.eggplants.godlo.R
 
 /**
- * A library tab's top bar: the tab's name at the top level; inside a folder, the folder's name
- * over the way back to it ("Images › takecomic.jp"), with an arrow up one level.
+ * A library tab's top bar: the tab's name at the top level; inside a folder, the folder's name over
+ * the way back to it ("Images › takecomic.jp"), with an arrow up one level.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +27,7 @@ fun LibraryTopBar(
     path: List<String>,
     onUp: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
-    actions: @Composable RowScope.() -> Unit
+    actions: @Composable RowScope.() -> Unit,
 ) {
     TopAppBar(
         navigationIcon = {
@@ -48,12 +48,12 @@ fun LibraryTopBar(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         },
         actions = actions,
-        scrollBehavior = scrollBehavior
+        scrollBehavior = scrollBehavior,
     )
 }

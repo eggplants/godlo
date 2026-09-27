@@ -3,7 +3,15 @@ package io.github.eggplants.godlo.ui.settings
 import io.github.eggplants.godlo.core.ConfigFormat
 
 /** What a stretch of a config file is, for the text editor to colour it by. */
-enum class TokenKind { COMMENT, STRING, NUMBER, KEYWORD, KEY, SECTION, OPTION }
+enum class TokenKind {
+    COMMENT,
+    STRING,
+    NUMBER,
+    KEYWORD,
+    KEY,
+    SECTION,
+    OPTION,
+}
 
 /** [kind] from [start] up to, not including, [end]. */
 data class Token(val start: Int, val end: Int, val kind: TokenKind)
@@ -11,15 +19,16 @@ data class Token(val start: Int, val end: Int, val kind: TokenKind)
 /**
  * The tokens of [text] written as [format], in order and not overlapping.
  *
- * A lexer good enough to colour a file being typed, not a parser: it never fails, and a string
- * left open stops at the end of its line rather than swallowing the rest of the file.
+ * A lexer good enough to colour a file being typed, not a parser: it never fails, and a string left
+ * open stops at the end of its line rather than swallowing the rest of the file.
  */
-fun highlight(text: String, format: ConfigFormat): List<Token> = when (format) {
-    ConfigFormat.JSON -> JsonLexer(text).run()
-    ConfigFormat.TOML -> TomlLexer(text).run()
-    ConfigFormat.ARGS -> argsTokens(text)
-    ConfigFormat.COOKIES -> cookieTokens(text)
-}
+fun highlight(text: String, format: ConfigFormat): List<Token> =
+    when (format) {
+        ConfigFormat.JSON -> JsonLexer(text).run()
+        ConfigFormat.TOML -> TomlLexer(text).run()
+        ConfigFormat.ARGS -> argsTokens(text)
+        ConfigFormat.COOKIES -> cookieTokens(text)
+    }
 
 /** Where each line of [text] starts, the first at 0. */
 fun lineStarts(text: String): List<Int> = buildList {
@@ -58,36 +67,36 @@ private class JsonLexer(private val text: String) {
         var i = 0
         while (i < text.length) {
             val c = text[i]
-            i = when {
-                c == '"' -> {
-                    val end = text.stringEnd(i, "\"", escapes = true)
-                    // A string before a colon is a key; the colon may be on the next line.
-                    val kind = if (text.nextNonBlankOrNewline(end) == ':') {
-                        TokenKind.KEY
-                    } else {
-                        TokenKind.STRING
+            i =
+                when {
+                    c == '"' -> {
+                        val end = text.stringEnd(i, "\"", escapes = true)
+                        // A string before a colon is a key; the colon may be on the next line.
+                        val kind =
+                            if (text.nextNonBlankOrNewline(end) == ':') {
+                                TokenKind.KEY
+                            } else {
+                                TokenKind.STRING
+                            }
+                        tokens += Token(i, end, kind)
+                        end
                     }
-                    tokens += Token(i, end, kind)
-                    end
-                }
 
-                c == '-' || c.isDigit() -> word(i, TokenKind.NUMBER) {
-                    it.isLetterOrDigit() ||
-                        it in ".+-"
-                }
+                    c == '-' || c.isDigit() ->
+                        word(i, TokenKind.NUMBER) {
+                            it.isLetterOrDigit() || it in ".+-"
+                        }
 
-                c.isLetter() -> {
-                    val end = scan(i) { it.isLetter() }
-                    if (text.substring(i, end) in
-                        JSON_WORDS
-                    ) {
-                        tokens += Token(i, end, TokenKind.KEYWORD)
+                    c.isLetter() -> {
+                        val end = scan(i) { it.isLetter() }
+                        if (text.substring(i, end) in JSON_WORDS) {
+                            tokens += Token(i, end, TokenKind.KEYWORD)
+                        }
+                        end
                     }
-                    end
-                }
 
-                else -> i + 1
-            }
+                    else -> i + 1
+                }
         }
         return tokens
     }
@@ -125,73 +134,76 @@ private class TomlLexer(private val text: String) {
         var i = 0
         while (i < text.length) {
             val c = text[i]
-            i = when {
-                c == '\n' -> {
-                    if (open.isEmpty()) expectKey = true
-                    i + 1
-                }
-
-                c == ' ' || c == '\t' || c == '\r' -> i + 1
-
-                c == '#' -> add(i, text.lineEnd(i), TokenKind.COMMENT)
-
-                c == '[' && expectKey && open.isEmpty() -> {
-                    // A [table] or [[array of tables]] header, up to its closing bracket.
-                    val close = text.indexOf(']', i).takeIf { it in i until text.lineEnd(i) }
-                    val end = close?.let { if (text.startsWith("]]", it)) it + 2 else it + 1 }
-                        ?: text.lineEnd(i)
-                    add(i, end, TokenKind.SECTION)
-                }
-
-                c == '"' || c == '\'' -> {
-                    val quote = if (text.startsWith("$c$c$c", i)) "$c$c$c" else "$c"
-                    val end = text.stringEnd(i, quote, escapes = c == '"')
-                    add(i, end, if (expectKey) TokenKind.KEY else TokenKind.STRING)
-                }
-
-                c == '=' -> {
-                    expectKey = false
-                    i + 1
-                }
-
-                c == '.' && expectKey -> i + 1
-
-                c == '[' || c == '{' -> {
-                    open.addLast(c)
-                    expectKey = c == '{'
-                    i + 1
-                }
-
-                c == ']' || c == '}' -> {
-                    open.removeLastOrNull()
-                    i + 1
-                }
-
-                c == ',' -> {
-                    expectKey = open.lastOrNull() == '{'
-                    i + 1
-                }
-
-                expectKey && isBare(c) -> add(i, scan(i, ::isBare), TokenKind.KEY)
-
-                isValue(c) -> {
-                    val end = scan(i, ::isValue)
-                    val word = text.substring(i, end)
-                    when {
-                        word in TOML_WORDS -> add(i, end, TokenKind.KEYWORD)
-
-                        word.first().isDigit() || word.first() in "+-" -> add(
-                            i,
-                            end,
-                            TokenKind.NUMBER
-                        )
-
-                        else -> end
+            i =
+                when {
+                    c == '\n' -> {
+                        if (open.isEmpty()) expectKey = true
+                        i + 1
                     }
-                }
 
-                else -> i + 1
-            }
+                    c == ' ' || c == '\t' || c == '\r' -> i + 1
+
+                    c == '#' -> add(i, text.lineEnd(i), TokenKind.COMMENT)
+
+                    c == '[' && expectKey && open.isEmpty() -> {
+                        // A [table] or [[array of tables]] header, up to its closing bracket.
+                        val close = text.indexOf(']', i).takeIf { it in i until text.lineEnd(i) }
+                        val end =
+                            close?.let { if (text.startsWith("]]", it)) it + 2 else it + 1 }
+                                ?: text.lineEnd(i)
+                        add(i, end, TokenKind.SECTION)
+                    }
+
+                    c == '"' || c == '\'' -> {
+                        val quote = if (text.startsWith("$c$c$c", i)) "$c$c$c" else "$c"
+                        val end = text.stringEnd(i, quote, escapes = c == '"')
+                        add(i, end, if (expectKey) TokenKind.KEY else TokenKind.STRING)
+                    }
+
+                    c == '=' -> {
+                        expectKey = false
+                        i + 1
+                    }
+
+                    c == '.' && expectKey -> i + 1
+
+                    c == '[' || c == '{' -> {
+                        open.addLast(c)
+                        expectKey = c == '{'
+                        i + 1
+                    }
+
+                    c == ']' || c == '}' -> {
+                        open.removeLastOrNull()
+                        i + 1
+                    }
+
+                    c == ',' -> {
+                        expectKey = open.lastOrNull() == '{'
+                        i + 1
+                    }
+
+                    expectKey && isBare(c) -> add(i, scan(i, ::isBare), TokenKind.KEY)
+
+                    isValue(c) -> {
+                        val end = scan(i, ::isValue)
+                        val word = text.substring(i, end)
+                        when {
+                            word in TOML_WORDS -> add(i, end, TokenKind.KEYWORD)
+
+                            word.first().isDigit() || word.first() in "+-" ->
+                                add(
+                                    i,
+                                    end,
+                                    TokenKind.NUMBER,
+                                )
+
+                            else -> end
+                        }
+                    }
+
+                    else -> i + 1
+                }
         }
         return tokens
     }
@@ -223,33 +235,37 @@ private fun argsTokens(text: String): List<Token> {
     var i = 0
     while (i < text.length) {
         val c = text[i]
-        i = when {
-            c.isWhitespace() -> i + 1
+        i =
+            when {
+                c.isWhitespace() -> i + 1
 
-            c == '#' -> text.lineEnd(i).also { tokens += Token(i, it, TokenKind.COMMENT) }
+                c == '#' -> text.lineEnd(i).also { tokens += Token(i, it, TokenKind.COMMENT) }
 
-            c == '"' || c == '\'' -> text.stringEnd(i, "$c", escapes = c == '"').also {
-                tokens += Token(i, it, TokenKind.STRING)
-            }
+                c == '"' || c == '\'' ->
+                    text.stringEnd(i, "$c", escapes = c == '"').also {
+                        tokens += Token(i, it, TokenKind.STRING)
+                    }
 
-            else -> {
-                var end = i
-                while (end < text.length && !text[end].isWhitespace() && text[end] !in "\"'") end++
-                if (c == '-') {
-                    // --option=value: the value is not part of the option.
-                    val eq = text.indexOf('=', i).takeIf { it in i until end } ?: end
-                    tokens += Token(i, eq, TokenKind.OPTION)
+                else -> {
+                    var end = i
+                    while (end < text.length && !text[end].isWhitespace() && text[end] !in "\"'") {
+                        end++
+                    }
+                    if (c == '-') {
+                        // --option=value: the value is not part of the option.
+                        val eq = text.indexOf('=', i).takeIf { it in i until end } ?: end
+                        tokens += Token(i, eq, TokenKind.OPTION)
+                    }
+                    end
                 }
-                end
             }
-        }
     }
     return tokens
 }
 
 /**
- * cookies.txt: `#` comments, and seven tab-separated fields per cookie: domain, subdomains,
- * path, secure, expiry, name, value. `#HttpOnly_` in front of a domain is not a comment.
+ * cookies.txt: `#` comments, and seven tab-separated fields per cookie: domain, subdomains, path,
+ * secure, expiry, name, value. `#HttpOnly_` in front of a domain is not a comment.
  */
 private fun cookieTokens(text: String): List<Token> {
     val tokens = mutableListOf<Token>()
@@ -262,20 +278,22 @@ private fun cookieTokens(text: String): List<Token> {
         }
         var from = start
         for (field in 0 until 7) {
-            val to = if (field ==
-                6
-            ) {
-                end
-            } else {
-                text.indexOf('\t', from).takeIf { it in from until end } ?: end
-            }
-            val kind = when (field) {
-                0, 5 -> TokenKind.KEY
-                1, 3 -> TokenKind.KEYWORD
-                4 -> TokenKind.NUMBER
-                6 -> TokenKind.STRING
-                else -> null
-            }
+            val to =
+                if (field == 6) {
+                    end
+                } else {
+                    text.indexOf('\t', from).takeIf { it in from until end } ?: end
+                }
+            val kind =
+                when (field) {
+                    0,
+                    5 -> TokenKind.KEY
+                    1,
+                    3 -> TokenKind.KEYWORD
+                    4 -> TokenKind.NUMBER
+                    6 -> TokenKind.STRING
+                    else -> null
+                }
             if (kind != null && to > from) tokens += Token(from, to, kind)
             if (to >= end) break
             from = to + 1

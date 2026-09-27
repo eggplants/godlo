@@ -28,9 +28,10 @@ data class Album(
     val path: List<String>,
     val cover: File,
     val count: Int,
-    val modified: Long
+    val modified: Long,
 ) {
-    val title: String get() = dir.name
+    val title: String
+        get() = dir.name
 }
 
 data class MediaFile(
@@ -38,32 +39,34 @@ data class MediaFile(
     /** Names from the tool's directory down: `<site>/[<folder>/...]<file>`. */
     val path: List<String>,
     val modified: Long,
-    val size: Long
+    val size: Long,
 ) {
-    val title: String get() = file.nameWithoutExtension
+    val title: String
+        get() = file.nameWithoutExtension
 }
 
 data class Library(
     val albums: List<Album> = emptyList(),
     val audio: List<MediaFile> = emptyList(),
     val video: List<MediaFile> = emptyList(),
-    val loading: Boolean = true
+    val loading: Boolean = true,
 )
 
 /**
  * Everything saved in the tools' directories, found by walking the file system.
  *
- * Each tool keeps `<site>/` directories in its own directory, whatever it saved, so what a
- * file is comes from its extension: a directory of pictures makes an album.
+ * Each tool keeps `<site>/` directories in its own directory, whatever it saved, so what a file is
+ * comes from its extension: a directory of pictures makes an album.
  */
 class LibraryRepository(settings: SettingsRepository) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private val _library = MutableStateFlow(Library())
     val library: StateFlow<Library> = _library.asStateFlow()
-    private val roots = settings.settings
-        .map { s -> Engine.entries.map { File(s.root(it)) }.distinct() }
-        .distinctUntilChanged()
+    private val roots =
+        settings.settings
+            .map { s -> Engine.entries.map { File(s.root(it)) }.distinct() }
+            .distinctUntilChanged()
 
     init {
         scope.launch { roots.collect { refreshNow(it) } }
@@ -74,16 +77,23 @@ class LibraryRepository(settings: SettingsRepository) {
     }
 
     private suspend fun refreshNow(roots: List<File>) = lock.withLock {
-        _library.value = Library(
-            albums = roots.flatMap(::scanAlbums).sortedByDescending { it.modified },
-            audio = roots.flatMap {
-                scanFiles(it, AUDIO_EXTENSIONS)
-            }.sortedByDescending { it.modified },
-            video = roots.flatMap {
-                scanFiles(it, VIDEO_EXTENSIONS)
-            }.sortedByDescending { it.modified },
-            loading = false
-        )
+        _library.value =
+            Library(
+                albums = roots.flatMap(::scanAlbums).sortedByDescending { it.modified },
+                audio =
+                    roots
+                        .flatMap {
+                            scanFiles(it, AUDIO_EXTENSIONS)
+                        }
+                        .sortedByDescending { it.modified },
+                video =
+                    roots
+                        .flatMap {
+                            scanFiles(it, VIDEO_EXTENSIONS)
+                        }
+                        .sortedByDescending { it.modified },
+                loading = false,
+            )
     }
 
     /** Deletes albums, folders of them or files, and forgets them. */
@@ -97,7 +107,8 @@ class LibraryRepository(settings: SettingsRepository) {
     private fun scanAlbums(base: File): List<Album> {
         if (!base.isDirectory) return emptyList()
         val albums = mutableListOf<Album>()
-        base.walkTopDown()
+        base
+            .walkTopDown()
             .onEnter { !it.name.startsWith(".") && it.name != "_cbz" }
             .filter { it.isDirectory && it != base }
             .forEach { dir ->
@@ -105,21 +116,23 @@ class LibraryRepository(settings: SettingsRepository) {
                     f.isFile && f.extension.lowercase() in IMAGE_EXTENSIONS
                 }
                 if (images.isNullOrEmpty()) return@forEach
-                albums += Album(
-                    dir = dir,
-                    // Pictures straight in <site>/ make an album named after the site.
-                    path = dir.relativeTo(base).invariantSeparatorsPath.split("/"),
-                    cover = images.minWith(NaturalOrder.files),
-                    count = images.size,
-                    modified = images.maxOf { it.lastModified() }
-                )
+                albums +=
+                    Album(
+                        dir = dir,
+                        // Pictures straight in <site>/ make an album named after the site.
+                        path = dir.relativeTo(base).invariantSeparatorsPath.split("/"),
+                        cover = images.minWith(NaturalOrder.files),
+                        count = images.size,
+                        modified = images.maxOf { it.lastModified() },
+                    )
             }
         return albums
     }
 
     private fun scanFiles(base: File, extensions: Set<String>): List<MediaFile> {
         if (!base.isDirectory) return emptyList()
-        return base.walkTopDown()
+        return base
+            .walkTopDown()
             .onEnter { !it.name.startsWith(".") }
             .filter { it.isFile && it.extension.lowercase() in extensions && it.parentFile != base }
             .map { file ->
@@ -127,7 +140,7 @@ class LibraryRepository(settings: SettingsRepository) {
                     file = file,
                     path = file.relativeTo(base).invariantSeparatorsPath.split("/"),
                     modified = file.lastModified(),
-                    size = file.length()
+                    size = file.length(),
                 )
             }
             .toList()
@@ -144,12 +157,13 @@ object NaturalOrder : Comparator<String> {
         for (i in 0 until minOf(xs.size, ys.size)) {
             val x = xs[i]
             val y = ys[i]
-            val c = if (x[0].isDigit() && y[0].isDigit()) {
-                x.trimStart('0').length.compareTo(y.trimStart('0').length).takeIf { it != 0 }
-                    ?: x.trimStart('0').compareTo(y.trimStart('0'))
-            } else {
-                x.compareTo(y)
-            }
+            val c =
+                if (x[0].isDigit() && y[0].isDigit()) {
+                    x.trimStart('0').length.compareTo(y.trimStart('0').length).takeIf { it != 0 }
+                        ?: x.trimStart('0').compareTo(y.trimStart('0'))
+                } else {
+                    x.compareTo(y)
+                }
             if (c != 0) return c
         }
         return xs.size.compareTo(ys.size)

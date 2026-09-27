@@ -33,7 +33,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-enum class TaskState { QUEUED, RUNNING, DONE, FAILED, CANCELLED }
+enum class TaskState {
+    QUEUED,
+    RUNNING,
+    DONE,
+    FAILED,
+    CANCELLED,
+}
 
 @Serializable
 data class DownloadTask(
@@ -59,20 +65,20 @@ data class DownloadTask(
     val files: List<String> = emptyList(),
     val message: String = "",
     val log: List<String> = emptyList(),
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 ) {
-    val finished: Boolean get() = state == TaskState.DONE || state == TaskState.FAILED ||
-        state == TaskState.CANCELLED
+    val finished: Boolean
+        get() = state == TaskState.DONE || state == TaskState.FAILED || state == TaskState.CANCELLED
 }
 
 /**
- * The download queue. Tasks run one at a time: the tools share global state inside the one
- * Python interpreter, and the site would rather not see parallel scrapes anyway.
+ * The download queue. Tasks run one at a time: the tools share global state inside the one Python
+ * interpreter, and the site would rather not see parallel scrapes anyway.
  */
 class DownloadManager(
     private val context: Context,
     private val python: PythonBridge,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val json = Json { ignoreUnknownKeys = true }
@@ -98,20 +104,21 @@ class DownloadManager(
         videoQuality: String,
         audioFormat: String,
         previous: Boolean = false,
-        store: Boolean = false
+        store: Boolean = false,
     ) {
-        val task = DownloadTask(
-            id = System.nanoTime(),
-            url = url.trim(),
-            engine = engine,
-            kind = kind,
-            site = site,
-            playlist = playlist,
-            videoQuality = videoQuality,
-            audioFormat = audioFormat,
-            previous = previous,
-            store = store
-        )
+        val task =
+            DownloadTask(
+                id = System.nanoTime(),
+                url = url.trim(),
+                engine = engine,
+                kind = kind,
+                site = site,
+                playlist = playlist,
+                videoQuality = videoQuality,
+                audioFormat = audioFormat,
+                previous = previous,
+                store = store,
+            )
         add(task)
     }
 
@@ -128,7 +135,7 @@ class DownloadManager(
                 videoQuality = "",
                 audioFormat = "",
                 title = AppLanguage.localize(context).getString(R.string.patrol_title),
-                patrol = true
+                patrol = true,
             )
         )
     }
@@ -155,7 +162,7 @@ class DownloadManager(
                 progress = -1f,
                 detail = "",
                 message = "",
-                log = emptyList()
+                log = emptyList(),
             )
         }
         ContextCompat.startForegroundService(context, DownloadService.intent(context))
@@ -176,15 +183,16 @@ class DownloadManager(
         get() = _tasks.value.any { it.state == TaskState.QUEUED || it.state == TaskState.RUNNING }
 
     /** Runs queued tasks until none are left. Called by [DownloadService]. */
-    suspend fun drain(onUpdate: (DownloadTask) -> Unit) = withContext(Dispatchers.IO) {
-        runLock.withLock {
-            while (true) {
-                // Oldest first: new tasks go to the front of the list.
-                val next = _tasks.value.lastOrNull { it.state == TaskState.QUEUED } ?: break
-                run(next, settings.settings.first(), onUpdate)
+    suspend fun drain(onUpdate: (DownloadTask) -> Unit) =
+        withContext(Dispatchers.IO) {
+            runLock.withLock {
+                while (true) {
+                    // Oldest first: new tasks go to the front of the list.
+                    val next = _tasks.value.lastOrNull { it.state == TaskState.QUEUED } ?: break
+                    run(next, settings.settings.first(), onUpdate)
+                }
             }
         }
-    }
 
     private fun run(task: DownloadTask, settings: AppSettings, onUpdate: (DownloadTask) -> Unit) {
         val id = task.id
@@ -194,56 +202,61 @@ class DownloadManager(
         val root = settings.root(task.engine)
         val configDir = Storage.configDir
         val cookies = File(configDir, "cookies.txt").takeIf { it.isFile }?.absolutePath
-        val request = DownloadRequest(
-            url = task.url,
-            engine = task.engine.id,
-            kind = task.kind.id,
-            root = root,
-            playlist = task.playlist,
-            previous = task.previous,
-            store = task.store,
-            patrol = task.patrol,
-            videoQuality = task.videoQuality,
-            audioFormat = task.audioFormat,
-            imageFormat = settings.imageFormat,
-            cbz = settings.cbz,
-            cookies = cookies,
-            configDir = configDir.absolutePath,
-            lang = AppLanguage.shown()
-        )
+        val request =
+            DownloadRequest(
+                url = task.url,
+                engine = task.engine.id,
+                kind = task.kind.id,
+                root = root,
+                playlist = task.playlist,
+                previous = task.previous,
+                store = task.store,
+                patrol = task.patrol,
+                videoQuality = task.videoQuality,
+                audioFormat = task.audioFormat,
+                imageFormat = settings.imageFormat,
+                cbz = settings.cbz,
+                cookies = cookies,
+                configDir = configDir.absolutePath,
+                lang = AppLanguage.shown(),
+            )
         var lastEmit = 0L
-        val callback = object : DownloadCallback {
-            override fun progress(fraction: Double, detail: String) {
-                edit(id, save = false) { it.copy(progress = fraction.toFloat(), detail = detail) }
-                val now = System.currentTimeMillis()
-                if (now - lastEmit > 500) {
-                    lastEmit = now
-                    onUpdate(current(id))
+        val callback =
+            object : DownloadCallback {
+                override fun progress(fraction: Double, detail: String) {
+                    edit(id, save = false) {
+                        it.copy(progress = fraction.toFloat(), detail = detail)
+                    }
+                    val now = System.currentTimeMillis()
+                    if (now - lastEmit > 500) {
+                        lastEmit = now
+                        onUpdate(current(id))
+                    }
                 }
-            }
 
-            override fun title(text: String) {
-                if (current(id).title != text) edit(id, save = false) { it.copy(title = text) }
-            }
+                override fun title(text: String) {
+                    if (current(id).title != text) edit(id, save = false) { it.copy(title = text) }
+                }
 
-            override fun file(path: String) {
-                edit(id, save = false) { it.copy(files = it.files + path) }
-            }
+                override fun file(path: String) {
+                    edit(id, save = false) { it.copy(files = it.files + path) }
+                }
 
-            override fun log(text: String) {
-                edit(id, save = false) { it.copy(log = (it.log + text).takeLast(MAX_LOG)) }
-            }
+                override fun log(text: String) {
+                    edit(id, save = false) { it.copy(log = (it.log + text).takeLast(MAX_LOG)) }
+                }
 
-            override fun cancelled(): Boolean = id in cancelled
-        }
+                override fun cancelled(): Boolean = id in cancelled
+            }
 
         File(root).mkdirs()
         val outcome = python.download(request, callback)
-        var state = when (outcome.status) {
-            "ok" -> TaskState.DONE
-            "cancelled" -> TaskState.CANCELLED
-            else -> TaskState.FAILED
-        }
+        var state =
+            when (outcome.status) {
+                "ok" -> TaskState.DONE
+                "cancelled" -> TaskState.CANCELLED
+                else -> TaskState.FAILED
+            }
         var message = outcome.message
         val copy = settings.copy(task.engine)
         if (state == TaskState.DONE && copy != null) {
@@ -258,7 +271,7 @@ class DownloadManager(
                 progress = if (state == TaskState.DONE) 1f else it.progress,
                 detail = "",
                 message = message,
-                title = it.title.ifBlank { it.url }
+                title = it.title.ifBlank { it.url },
             )
         }
         cancelled -= id
@@ -271,14 +284,14 @@ class DownloadManager(
     }
 
     /**
-     * Copies what [task] saved under [root] into the folder [tree]; the message to show when
-     * that fails, or null.
+     * Copies what [task] saved under [root] into the folder [tree]; the message to show when that
+     * fails, or null.
      */
     private fun copyError(
         task: DownloadTask,
         root: File,
         tree: Uri,
-        onUpdate: (DownloadTask) -> Unit
+        onUpdate: (DownloadTask) -> Unit,
     ): String? {
         val strings = AppLanguage.localize(context)
         return try {
@@ -287,7 +300,7 @@ class DownloadManager(
                 edit(task.id, save = false) {
                     it.copy(
                         progress = if (total == 0) 1f else done.toFloat() / total,
-                        detail = strings.getString(R.string.copying, done, total)
+                        detail = strings.getString(R.string.copying, done, total),
                     )
                 }
                 onUpdate(current(task.id))
@@ -304,9 +317,13 @@ class DownloadManager(
         val files = paths.flatMap { path ->
             val file = File(path)
             if (file.isDirectory) {
-                file.walkTopDown().filter {
-                    it.isFile
-                }.map { it.absolutePath }.toList()
+                file
+                    .walkTopDown()
+                    .filter {
+                        it.isFile
+                    }
+                    .map { it.absolutePath }
+                    .toList()
             } else {
                 listOf(path)
             }
@@ -316,7 +333,7 @@ class DownloadManager(
                 context,
                 files.toTypedArray(),
                 null,
-                null
+                null,
             )
         }
     }
@@ -342,15 +359,14 @@ class DownloadManager(
     private fun loadHistory(): List<DownloadTask> = runCatching {
         json.decodeFromString<List<DownloadTask>>(historyFile.readText()).map {
             // Whatever was running when the process died starts over.
-            if (it.state ==
-                TaskState.RUNNING
-            ) {
+            if (it.state == TaskState.RUNNING) {
                 it.copy(state = TaskState.QUEUED, progress = -1f, detail = "")
             } else {
                 it
             }
         }
-    }.getOrDefault(emptyList())
+    }
+        .getOrDefault(emptyList())
 
     private companion object {
         const val MAX_LOG = 200

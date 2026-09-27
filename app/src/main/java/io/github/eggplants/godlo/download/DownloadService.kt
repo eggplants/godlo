@@ -35,22 +35,21 @@ class DownloadService : LifecycleService() {
             this,
             NOTIFICATION_ID,
             progressNotification(null),
-            if (Build.VERSION.SDK_INT >=
-                Build.VERSION_CODES.Q
-            ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             } else {
                 0
-            }
+            },
         )
         if (job?.isActive != true) {
             val manager = (application as GodloApp).container.downloads
             job = lifecycleScope.launch {
-                // A task queued just as the last one finished would otherwise wait for the next start.
+                // A task queued just as the last one finished would otherwise wait for the next
+                // start.
                 do manager.drain { task -> onUpdate(task) } while (manager.hasPending)
                 ServiceCompat.stopForeground(
                     this@DownloadService,
-                    ServiceCompat.STOP_FOREGROUND_REMOVE
+                    ServiceCompat.STOP_FOREGROUND_REMOVE,
                 )
                 stopSelf()
             }
@@ -63,15 +62,18 @@ class DownloadService : LifecycleService() {
         if (!notifications.areNotificationsEnabled()) return
         try {
             when (task.state) {
-                TaskState.RUNNING -> notifications.notify(
-                    NOTIFICATION_ID,
-                    progressNotification(task)
-                )
+                TaskState.RUNNING ->
+                    notifications.notify(
+                        NOTIFICATION_ID,
+                        progressNotification(task),
+                    )
 
-                TaskState.DONE, TaskState.FAILED -> notifications.notify(
-                    task.id.toInt(),
-                    resultNotification(task)
-                )
+                TaskState.DONE,
+                TaskState.FAILED ->
+                    notifications.notify(
+                        task.id.toInt(),
+                        resultNotification(task),
+                    )
 
                 else -> Unit
             }
@@ -80,30 +82,30 @@ class DownloadService : LifecycleService() {
         }
     }
 
-    private fun openApp(): PendingIntent = PendingIntent.getActivity(
-        this,
-        0,
-        Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
+    private fun openApp(): PendingIntent =
+        PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
     private fun progressNotification(task: DownloadTask?): Notification {
-        val builder = NotificationCompat.Builder(this, CHANNEL_PROGRESS)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle(
-                task?.title?.ifBlank {
-                    null
-                } ?: task?.url ?: strings.getString(R.string.downloading)
-            )
-            .setContentText(task?.detail)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setContentIntent(openApp())
+        val builder =
+            NotificationCompat.Builder(this, CHANNEL_PROGRESS)
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle(
+                    task?.title?.ifBlank {
+                        null
+                    } ?: task?.url ?: strings.getString(R.string.downloading)
+                )
+                .setContentText(task?.detail)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setContentIntent(openApp())
         val progress = task?.progress ?: -1f
-        if (progress >=
-            0f
-        ) {
+        if (progress >= 0f) {
             builder.setProgress(1000, (progress * 1000).toInt(), false)
         } else {
             builder.setProgress(0, 0, true)
@@ -114,9 +116,7 @@ class DownloadService : LifecycleService() {
     private fun resultNotification(task: DownloadTask): Notification =
         NotificationCompat.Builder(this, CHANNEL_RESULT)
             .setSmallIcon(
-                if (task.state ==
-                    TaskState.DONE
-                ) {
+                if (task.state == TaskState.DONE) {
                     android.R.drawable.stat_sys_download_done
                 } else {
                     android.R.drawable.stat_notify_error
@@ -124,9 +124,7 @@ class DownloadService : LifecycleService() {
             )
             .setContentTitle(
                 strings.getString(
-                    if (task.state ==
-                        TaskState.DONE
-                    ) {
+                    if (task.state == TaskState.DONE) {
                         R.string.download_done
                     } else {
                         R.string.download_failed
@@ -135,11 +133,14 @@ class DownloadService : LifecycleService() {
             )
             .setContentText(task.title.ifBlank { task.url })
             .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    listOf(task.title, task.message).filter {
-                        it.isNotBlank()
-                    }.joinToString("\n")
-                )
+                NotificationCompat.BigTextStyle()
+                    .bigText(
+                        listOf(task.title, task.message)
+                            .filter {
+                                it.isNotBlank()
+                            }
+                            .joinToString("\n")
+                    )
             )
             .setAutoCancel(true)
             .setContentIntent(openApp())
@@ -158,14 +159,14 @@ class DownloadService : LifecycleService() {
                 NotificationChannel(
                     CHANNEL_PROGRESS,
                     context.getString(R.string.channel_progress),
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_LOW,
                 )
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_RESULT,
                     context.getString(R.string.channel_result),
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_DEFAULT,
                 )
             )
         }

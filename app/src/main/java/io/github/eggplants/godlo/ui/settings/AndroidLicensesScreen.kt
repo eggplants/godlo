@@ -49,14 +49,14 @@ fun AndroidLicensesScreen(onBack: () -> Unit) {
                     }
                 },
                 title = { Text(stringResource(R.string.about_licenses_android)) },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { padding ->
         LibrariesContainer(
             libraries,
             Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 16.dp),
         )
     }
 }

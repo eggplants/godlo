@@ -18,8 +18,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * The getjmanga works to go back to for new episodes: the `[[patrol]]` entries of
- * `getjmanga.toml` in [Storage.configDir], which getjmanga on a computer reads too.
+ * The getjmanga works to go back to for new episodes: the `[[patrol]]` entries of `getjmanga.toml`
+ * in [Storage.configDir], which getjmanga on a computer reads too.
  */
 class Patrol(private val python: PythonBridge, private val downloads: DownloadManager) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -56,7 +56,9 @@ class Patrol(private val python: PythonBridge, private val downloads: DownloadMa
 
     fun start() = downloads.enqueuePatrol()
 
-    private fun read(): List<PatrolWork> = runCatching { python.patrolWorks(Storage.configDir) }
+    private fun read(): List<PatrolWork> = runCatching {
+        python.patrolWorks(Storage.configDir)
+    }
         .onFailure { Log.w("Godlo", "could not read the patrol", it) }
         .getOrDefault(emptyList())
 }

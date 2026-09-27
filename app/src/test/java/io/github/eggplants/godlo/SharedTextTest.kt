@@ -15,7 +15,7 @@ class SharedTextTest {
     fun aLinkAfterATitle() {
         assertEquals(
             "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-            SharedText.url("Me at the zoo https://www.youtube.com/watch?v=jNQXAC9IVRw")
+            SharedText.url("Me at the zoo https://www.youtube.com/watch?v=jNQXAC9IVRw"),
         )
     }
 
@@ -23,7 +23,9 @@ class SharedTextTest {
     fun chromesQuoteOfAPassage() {
         assertEquals(
             "https://example.com/#:~:text=This%20domain",
-            SharedText.url("\"This domain is for use\"\nhttps://example.com/#:~:text=This%20domain")
+            SharedText.url(
+                "\"This domain is for use\"\nhttps://example.com/#:~:text=This%20domain"
+            ),
         )
     }
 
@@ -31,7 +33,7 @@ class SharedTextTest {
     fun japaneseTextRightAfterTheLink() {
         assertEquals(
             "https://shonenjumpplus.com/episode/1",
-            SharedText.url("最新話（https://shonenjumpplus.com/episode/1）を読んだ")
+            SharedText.url("最新話（https://shonenjumpplus.com/episode/1）を読んだ"),
         )
         assertEquals("https://example.com/a", SharedText.url("ここ https://example.com/a、です。"))
         assertEquals("https://example.com/a", SharedText.url("See https://example.com/a."))

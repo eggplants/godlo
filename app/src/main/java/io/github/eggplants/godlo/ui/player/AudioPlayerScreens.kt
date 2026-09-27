@@ -88,7 +88,7 @@ private fun Artwork(bytes: ByteArray?, modifier: Modifier = Modifier) {
         }
     Box(
         modifier.background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (bitmap != null) {
             Image(bitmap, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -97,7 +97,7 @@ private fun Artwork(bytes: ByteArray?, modifier: Modifier = Modifier) {
                 Icons.Filled.AudioFile,
                 null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.fillMaxSize(0.4f)
+                modifier = Modifier.fillMaxSize(0.4f),
             )
         }
     }
@@ -109,14 +109,12 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
     val position = rememberPosition(container.audio, state.isPlaying)
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand)
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand),
     ) {
         Column {
             LinearProgressIndicator(
                 progress = {
-                    if (state.durationMs >
-                        0
-                    ) {
+                    if (state.durationMs > 0) {
                         position.toFloat() / state.durationMs
                     } else {
                         0f
@@ -124,11 +122,11 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth().height(2.dp),
                 drawStopIndicator = {},
-                gapSize = 0.dp
+                gapSize = 0.dp,
             )
             Row(
                 Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Artwork(state.artwork, Modifier.size(44.dp).clip(MaterialTheme.shapes.small))
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
@@ -136,7 +134,7 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
                         state.title,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (state.artist.isNotBlank()) {
                         Text(
@@ -144,14 +142,14 @@ fun MiniPlayer(container: AppContainer, onExpand: () -> Unit) {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
                 IconButton(onClick = container.audio::toggle) {
                     Icon(
                         if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        stringResource(if (state.isPlaying) R.string.pause else R.string.play)
+                        stringResource(if (state.isPlaying) R.string.pause else R.string.play),
                     )
                 }
                 IconButton(onClick = container.audio::next, enabled = state.hasNext) {
@@ -178,11 +176,12 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
             val wide = maxWidth > maxHeight
             Column(
                 // Edge to edge: clear of the status bar, and of a three-button navigation bar.
-                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(
-                    horizontal = 24.dp
-                ).padding(top = 8.dp, bottom = 24.dp),
+                Modifier.fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onBack) {
@@ -192,34 +191,35 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                         stringResource(R.string.now_playing),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.size(48.dp))
                 }
                 if (!wide) {
                     Artwork(
                         state.artwork,
-                        Modifier.widthIn(
-                            max = 420.dp
-                        ).fillMaxWidth().aspectRatio(1f).clip(MaterialTheme.shapes.extraLarge)
+                        Modifier.widthIn(max = 420.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(MaterialTheme.shapes.extraLarge),
                     )
                 }
                 Column(
                     Modifier.widthIn(max = 560.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         state.title,
                         style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (state.artist.isNotBlank()) {
                         Text(
                             state.artist,
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(Modifier.height(16.dp))
@@ -230,79 +230,81 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                             seeking?.let { audio.seekTo(it.toLong()) }
                             seeking = null
                         },
-                        valueRange = 0f..state.durationMs.coerceAtLeast(1).toFloat()
+                        valueRange = 0f..state.durationMs.coerceAtLeast(1).toFloat(),
                     )
                     Row(Modifier.fillMaxWidth()) {
                         Text(
                             formatDuration(seeking?.toLong() ?: position),
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
                             formatDuration(state.durationMs),
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
                         )
                     }
                     Spacer(Modifier.height(16.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        IconToggleButton(checked = state.shuffle, onCheckedChange = {
-                            audio.toggleShuffle()
-                        }) {
+                        IconToggleButton(
+                            checked = state.shuffle,
+                            onCheckedChange = {
+                                audio.toggleShuffle()
+                            },
+                        ) {
                             Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle))
                         }
                         IconButton(onClick = audio::previous, modifier = Modifier.size(56.dp)) {
                             Icon(
                                 Icons.Filled.SkipPrevious,
                                 stringResource(R.string.previous),
-                                Modifier.size(32.dp)
+                                Modifier.size(32.dp),
                             )
                         }
                         FilledIconButton(
                             onClick = audio::toggle,
                             modifier = Modifier.size(80.dp),
                             // Morphs from a circle to a rounded square while playing.
-                            shape = if (state.isPlaying) {
-                                MaterialTheme.shapes.extraLarge
-                            } else {
-                                CircleShape
-                            },
-                            colors = IconButtonDefaults.filledIconButtonColors()
+                            shape =
+                                if (state.isPlaying) {
+                                    MaterialTheme.shapes.extraLarge
+                                } else {
+                                    CircleShape
+                                },
+                            colors = IconButtonDefaults.filledIconButtonColors(),
                         ) {
                             Icon(
                                 if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 stringResource(
                                     if (state.isPlaying) R.string.pause else R.string.play
                                 ),
-                                Modifier.size(40.dp)
+                                Modifier.size(40.dp),
                             )
                         }
                         IconButton(
                             onClick = audio::next,
                             enabled = state.hasNext,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(56.dp),
                         ) {
                             Icon(
                                 Icons.Filled.SkipNext,
                                 stringResource(R.string.next),
-                                Modifier.size(32.dp)
+                                Modifier.size(32.dp),
                             )
                         }
                         IconToggleButton(
                             checked = state.repeatMode != Player.REPEAT_MODE_OFF,
-                            onCheckedChange = { audio.cycleRepeat() }
+                            onCheckedChange = { audio.cycleRepeat() },
                         ) {
                             Icon(
-                                if (state.repeatMode ==
-                                    Player.REPEAT_MODE_ONE
-                                ) {
+                                if (state.repeatMode == Player.REPEAT_MODE_ONE) {
                                     Icons.Filled.RepeatOne
                                 } else {
                                     Icons.Filled.Repeat
                                 },
-                                stringResource(R.string.repeat)
+                                stringResource(R.string.repeat),
                             )
                         }
                     }

@@ -20,30 +20,32 @@ sealed interface DownloadTarget {
 
     data class Video(val file: File, override val folder: List<String>) : DownloadTarget
 
-    data class Audio(val files: List<File>, override val folder: List<String>) :
-        DownloadTarget
+    data class Audio(val files: List<File>, override val folder: List<String>) : DownloadTarget
 
     companion object {
         /**
-         * Where [task] can be opened, going by what the library found on disk, so a download
-         * whose files were deleted since has nowhere to go.
+         * Where [task] can be opened, going by what the library found on disk, so a download whose
+         * files were deleted since has nowhere to go.
          */
         fun of(task: DownloadTask, library: Library): DownloadTarget? {
             if (task.state != TaskState.DONE || task.files.isEmpty()) return null
             val files = task.files.map(::File)
             val paths = files.map { it.absolutePath }.toSet()
-            val video = library.video.firstOrNull { it.file.absolutePath in paths }
-                ?.let { Video(it.file, it.path.dropLast(1)) }
+            val video =
+                library.video
+                    .firstOrNull { it.file.absolutePath in paths }
+                    ?.let { Video(it.file, it.path.dropLast(1)) }
             return when (task.kind) {
                 MediaKind.AUDIO ->
-                    library.audio.filter { it.file.absolutePath in paths }
+                    library.audio
+                        .filter { it.file.absolutePath in paths }
                         .takeIf { it.isNotEmpty() }
                         ?.let { found ->
                             val byPath = found.associateBy { it.file.absolutePath }
                             Audio(
                                 // In the order they were downloaded, as a playlist runs.
                                 files.filter { it.absolutePath in byPath },
-                                commonPrefix(found.map { it.path.dropLast(1) })
+                                commonPrefix(found.map { it.path.dropLast(1) }),
                             )
                         }
 
@@ -52,21 +54,26 @@ sealed interface DownloadTarget {
                 MediaKind.IMAGE -> {
                     // getjmanga reports episode directories, gallery-dl the pictures in them.
                     val byDir = library.albums.associateBy { it.dir }
-                    val albums = files.mapNotNull { file ->
-                        byDir[file] ?: file.parentFile?.let(byDir::get)
-                    }.distinct()
+                    val albums =
+                        files
+                            .mapNotNull { file ->
+                                byDir[file] ?: file.parentFile?.let(byDir::get)
+                            }
+                            .distinct()
                     when {
-                        albums.size == 1 -> albums.single().let {
-                            Album(it.dir, it.path.dropLast(1))
-                        }
+                        albums.size == 1 ->
+                            albums.single().let {
+                                Album(it.dir, it.path.dropLast(1))
+                            }
 
-                        albums.isNotEmpty() -> ImageFolder(
-                            commonPrefix(
-                                albums.map {
-                                    it.path.dropLast(1)
-                                }
+                        albums.isNotEmpty() ->
+                            ImageFolder(
+                                commonPrefix(
+                                    albums.map {
+                                        it.path.dropLast(1)
+                                    }
+                                )
                             )
-                        )
 
                         // gallery-dl also saves the videos of image sites.
                         else -> video

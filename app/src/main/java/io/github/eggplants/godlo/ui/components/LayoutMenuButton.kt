@@ -22,11 +22,12 @@ import io.github.eggplants.godlo.R
 import io.github.eggplants.godlo.core.LibraryLayout
 
 val LibraryLayout.icon: ImageVector
-    get() = when (this) {
-        LibraryLayout.LIST -> Icons.AutoMirrored.Outlined.ViewList
-        LibraryLayout.LARGE_GRID -> Icons.Outlined.GridView
-        LibraryLayout.SMALL_GRID -> Icons.Outlined.GridOn
-    }
+    get() =
+        when (this) {
+            LibraryLayout.LIST -> Icons.AutoMirrored.Outlined.ViewList
+            LibraryLayout.LARGE_GRID -> Icons.Outlined.GridView
+            LibraryLayout.SMALL_GRID -> Icons.Outlined.GridOn
+        }
 
 /** A top app bar action showing the current layout, opening a menu of the others. */
 @Composable
@@ -36,10 +37,11 @@ fun LayoutMenuButton(current: LibraryLayout, onSelect: (LibraryLayout) -> Unit) 
         IconButton(onClick = { open = true }) {
             Icon(
                 current.icon,
-                contentDescription = stringResource(
-                    R.string.layout_button,
-                    stringResource(current.label)
-                )
+                contentDescription =
+                    stringResource(
+                        R.string.layout_button,
+                        stringResource(current.label),
+                    ),
             )
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -48,19 +50,17 @@ fun LayoutMenuButton(current: LibraryLayout, onSelect: (LibraryLayout) -> Unit) 
                     text = { Text(stringResource(layout.label)) },
                     leadingIcon = { Icon(layout.icon, contentDescription = null) },
                     trailingIcon = {
-                        if (layout ==
-                            current
-                        ) {
+                        if (layout == current) {
                             Icon(
                                 Icons.Filled.Check,
-                                contentDescription = stringResource(R.string.layout_selected)
+                                contentDescription = stringResource(R.string.layout_selected),
                             )
                         }
                     },
                     onClick = {
                         onSelect(layout)
                         open = false
-                    }
+                    },
                 )
             }
         }

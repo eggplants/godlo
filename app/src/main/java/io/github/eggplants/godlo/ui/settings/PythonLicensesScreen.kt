@@ -55,23 +55,25 @@ data class PythonLicense(
     val version: String,
     val license: String,
     val url: String,
-    val text: String
+    val text: String,
 )
 
 private fun loadLicenses(context: Context): List<PythonLicense> = runCatching {
     context.assets.open("python_licenses.json").use { input ->
         Json.decodeFromString<List<PythonLicense>>(input.readBytes().decodeToString())
     }
-}.getOrDefault(emptyList())
+}
+    .getOrDefault(emptyList())
 
 /** What AboutLibraries' list leaves out: the Python packages, bundled programs, ... */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PythonLicensesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val licenses by produceState(emptyList<PythonLicense>()) {
-        value = withContext(Dispatchers.IO) { loadLicenses(context) }
-    }
+    val licenses by
+        produceState(emptyList<PythonLicense>()) {
+            value = withContext(Dispatchers.IO) { loadLicenses(context) }
+        }
     var shown by remember { mutableStateOf<PythonLicense?>(null) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -85,26 +87,28 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
                     }
                 },
                 title = { Text(stringResource(R.string.about_licenses_python)) },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp)
+            contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 16.dp),
         ) {
             items(licenses, key = { it.name }) { entry ->
                 ListItem(
                     headlineContent = {
                         Text(
-                            listOf(entry.name, entry.version).filter {
-                                it.isNotBlank()
-                            }.joinToString(" ")
+                            listOf(entry.name, entry.version)
+                                .filter {
+                                    it.isNotBlank()
+                                }
+                                .joinToString(" ")
                         )
                     },
                     supportingContent = { Text(entry.license) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.clickable { shown = entry }
+                    modifier = Modifier.clickable { shown = entry },
                 )
             }
         }
@@ -120,12 +124,12 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
                 Text(
                     entry.license,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (entry.url.isNotBlank()) {
                     FilledTonalButton(
                         onClick = { uriHandler.openUri(entry.url) },
-                        modifier = Modifier.padding(vertical = 12.dp)
+                        modifier = Modifier.padding(vertical = 12.dp),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
                         Text(stringResource(R.string.open_website), Modifier.padding(start = 8.dp))
@@ -134,13 +138,14 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
                 if (entry.text.isNotBlank()) {
                     Text(
                         entry.text,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 480.dp)
-                            .verticalScroll(rememberScrollState())
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .heightIn(max = 480.dp)
+                                .verticalScroll(rememberScrollState()),
                     )
                 }
             }

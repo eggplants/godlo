@@ -97,7 +97,7 @@ fun SettingsScreen(
     container: AppContainer,
     onOpenConfig: (ConfigFile) -> Unit,
     onOpenAndroidLicenses: () -> Unit,
-    onOpenPythonLicenses: () -> Unit
+    onOpenPythonLicenses: () -> Unit,
 ) {
     val settings by container.settings.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -107,52 +107,54 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val context = LocalContext.current
     var choosingRoot by remember { mutableStateOf<Engine?>(null) }
-    val chooseRoot = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        val engine = choosingRoot ?: return@rememberLauncherForActivityResult
-        choosingRoot = null
-        if (uri == null) return@rememberLauncherForActivityResult
-        val root = FolderPath.toPath(
-            uri.authority.orEmpty(),
-            DocumentsContract.getTreeDocumentId(uri),
-            Environment.getExternalStorageDirectory().absolutePath
-        )
-        val old = settings.copy(engine)
-        if (root != null) {
-            update { it.copy(roots = it.roots + (engine to root), copies = it.copies - engine) }
-            old?.let { releaseFolder(context, it) }
-            return@rememberLauncherForActivityResult
+    val chooseRoot =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            val engine = choosingRoot ?: return@rememberLauncherForActivityResult
+            choosingRoot = null
+            if (uri == null) return@rememberLauncherForActivityResult
+            val root =
+                FolderPath.toPath(
+                    uri.authority.orEmpty(),
+                    DocumentsContract.getTreeDocumentId(uri),
+                    Environment.getExternalStorageDirectory().absolutePath,
+                )
+            val old = settings.copy(engine)
+            if (root != null) {
+                update { it.copy(roots = it.roots + (engine to root), copies = it.copies - engine) }
+                old?.let { releaseFolder(context, it) }
+                return@rememberLauncherForActivityResult
+            }
+            // No path the tools could write to, e.g. SMB: download here, then copy there.
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            } catch (_: SecurityException) {
+                Toast.makeText(context, R.string.root_unsupported, Toast.LENGTH_LONG).show()
+                return@rememberLauncherForActivityResult
+            }
+            update { it.copy(copies = it.copies + (engine to uri.toString())) }
+            if (old != null && old != uri.toString()) releaseFolder(context, old)
         }
-        // No path the tools could write to, e.g. SMB: download here, then copy there.
-        try {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-        } catch (_: SecurityException) {
-            Toast.makeText(context, R.string.root_unsupported, Toast.LENGTH_LONG).show()
-            return@rememberLauncherForActivityResult
-        }
-        update { it.copy(copies = it.copies + (engine to uri.toString())) }
-        if (old != null && old != uri.toString()) releaseFolder(context, old)
-    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(title = {
-                Text(stringResource(R.string.nav_settings))
-            }, scrollBehavior = scrollBehavior)
-        }
+            TopAppBar(
+                title = {
+                    Text(stringResource(R.string.nav_settings))
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
     ) { padding ->
         Column(
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(top = padding.calculateTopPadding())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Section(stringResource(R.string.settings_save_location), Icons.Outlined.Folder) {
                 for (engine in Engine.entries) {
@@ -161,40 +163,46 @@ fun SettingsScreen(
                     val copy = settings.copy(engine)
                     SettingItem(
                         title = engine.id,
-                        summary = if (copy == null) {
-                            stringResource(R.string.settings_root_summary, root)
-                        } else {
-                            val name by produceState(copy, copy) {
-                                value = withContext(Dispatchers.IO) { folderName(context, copy) }
-                            }
-                            stringResource(R.string.settings_copy_summary, root, name)
-                        },
-                        trailing = if (root == default && copy == null) {
-                            null
-                        } else {
-                            {
-                                IconButton(onClick = {
-                                    update {
-                                        it.copy(
-                                            roots = it.roots + (engine to default),
-                                            copies = it.copies - engine
+                        summary =
+                            if (copy == null) {
+                                stringResource(R.string.settings_root_summary, root)
+                            } else {
+                                val name by
+                                    produceState(copy, copy) {
+                                        value =
+                                            withContext(Dispatchers.IO) {
+                                                folderName(context, copy)
+                                            }
+                                    }
+                                stringResource(R.string.settings_copy_summary, root, name)
+                            },
+                        trailing =
+                            if (root == default && copy == null) {
+                                null
+                            } else {
+                                {
+                                    IconButton(
+                                        onClick = {
+                                            update {
+                                                it.copy(
+                                                    roots = it.roots + (engine to default),
+                                                    copies = it.copies - engine,
+                                                )
+                                            }
+                                            copy?.let { releaseFolder(context, it) }
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Restore,
+                                            stringResource(R.string.reset_default),
                                         )
                                     }
-                                    copy?.let { releaseFolder(context, it) }
-                                }) {
-                                    Icon(
-                                        Icons.Outlined.Restore,
-                                        stringResource(R.string.reset_default)
-                                    )
                                 }
-                            }
-                        },
+                            },
                         onClick = {
                             choosingRoot = engine
-                            chooseRoot.launch(
-                                copy?.let(::copyFolder) ?: initialFolder(root)
-                            )
-                        }
+                            chooseRoot.launch(copy?.let(::copyFolder) ?: initialFolder(root))
+                        },
                     )
                 }
             }
@@ -204,14 +212,14 @@ fun SettingsScreen(
                     SettingItem(
                         title = config.fileName,
                         summary = stringResource(config.summary),
-                        onClick = { onOpenConfig(config) }
+                        onClick = { onOpenConfig(config) },
                     )
                 }
                 Text(
                     stringResource(R.string.settings_config_body, Storage.configDir.path),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 )
             }
 
@@ -219,31 +227,35 @@ fun SettingsScreen(
                 ChoiceItem(
                     stringResource(R.string.settings_video_quality),
                     videoQualities(),
-                    settings.videoQuality
+                    settings.videoQuality,
                 ) { v ->
                     update { it.copy(videoQuality = v) }
                 }
                 ChoiceItem(
                     stringResource(R.string.settings_audio_format),
                     AUDIO_FORMATS,
-                    settings.audioFormat
+                    settings.audioFormat,
                 ) { v ->
                     update { it.copy(audioFormat = v) }
                 }
                 ChoiceItem(
                     stringResource(R.string.settings_manga_format),
                     listOf("jpg" to "JPEG", "png" to "PNG", "webp" to "WebP"),
-                    settings.imageFormat
-                ) { v -> update { it.copy(imageFormat = v) } }
+                    settings.imageFormat,
+                ) { v ->
+                    update { it.copy(imageFormat = v) }
+                }
                 ChoiceItem(
                     stringResource(R.string.settings_episodes),
                     EpisodeRange.entries.map { it.name to stringResource(it.label) },
-                    settings.episodes.name
-                ) { v -> update { it.copy(episodes = EpisodeRange.valueOf(v)) } }
+                    settings.episodes.name,
+                ) { v ->
+                    update { it.copy(episodes = EpisodeRange.valueOf(v)) }
+                }
                 SwitchItem(
                     stringResource(R.string.settings_cbz),
                     stringResource(R.string.settings_cbz_desc),
-                    settings.cbz
+                    settings.cbz,
                 ) { v ->
                     update { it.copy(cbz = v) }
                 }
@@ -253,21 +265,21 @@ fun SettingsScreen(
                 ChoiceItem(
                     stringResource(R.string.reading_direction),
                     ReadingDirection.entries.map { it.name to stringResource(it.label) },
-                    settings.readingDirection.name
+                    settings.readingDirection.name,
                 ) { v ->
                     update { it.copy(readingDirection = ReadingDirection.valueOf(v)) }
                 }
                 ChoiceItem(
                     stringResource(R.string.settings_spread),
                     SpreadMode.entries.map { it.name to stringResource(it.label) },
-                    settings.spreadMode.name
+                    settings.spreadMode.name,
                 ) { v ->
                     update { it.copy(spreadMode = SpreadMode.valueOf(v)) }
                 }
                 SwitchItem(
                     stringResource(R.string.cover_alone),
                     stringResource(R.string.cover_alone_desc),
-                    settings.coverAlone
+                    settings.coverAlone,
                 ) { v ->
                     update { it.copy(coverAlone = v) }
                 }
@@ -279,12 +291,14 @@ fun SettingsScreen(
                     AppLanguage.options.map { (tag, name) ->
                         tag to (name ?: stringResource(R.string.settings_language_system))
                     },
-                    AppLanguage.current()
-                ) { tag -> AppLanguage.set(tag) }
+                    AppLanguage.current(),
+                ) { tag ->
+                    AppLanguage.set(tag)
+                }
                 ChoiceItem(
                     stringResource(R.string.settings_theme),
                     ThemeMode.entries.map { it.name to stringResource(it.label) },
-                    settings.themeMode.name
+                    settings.themeMode.name,
                 ) { v ->
                     update { it.copy(themeMode = ThemeMode.valueOf(v)) }
                 }
@@ -292,7 +306,7 @@ fun SettingsScreen(
                     SwitchItem(
                         stringResource(R.string.settings_dynamic_color),
                         stringResource(R.string.settings_dynamic_color_desc),
-                        settings.dynamicColor
+                        settings.dynamicColor,
                     ) { v ->
                         update { it.copy(dynamicColor = v) }
                     }
@@ -311,7 +325,7 @@ private fun copyFolder(tree: String): Uri {
     val uri = Uri.parse(tree)
     return DocumentsContract.buildDocumentUriUsingTree(
         uri,
-        DocumentsContract.getTreeDocumentId(uri)
+        DocumentsContract.getTreeDocumentId(uri),
     )
 }
 
@@ -323,10 +337,14 @@ private fun folderName(context: Context, tree: String): String {
     val uri = Uri.parse(tree)
     val id = DocumentsContract.getTreeDocumentId(uri)
     val path = (if (':' in id) id.substringAfter(':') else id).trim('/')
-    val provider = runCatching {
-        context.packageManager.resolveContentProvider(uri.authority.orEmpty(), 0)
-            ?.loadLabel(context.packageManager)?.toString()
-    }.getOrNull() ?: uri.authority.orEmpty()
+    val provider =
+        runCatching {
+            context.packageManager
+                .resolveContentProvider(uri.authority.orEmpty(), 0)
+                ?.loadLabel(context.packageManager)
+                ?.toString()
+        }
+            .getOrNull() ?: uri.authority.orEmpty()
     return "$provider: $path"
 }
 
@@ -335,7 +353,7 @@ private fun releaseFolder(context: Context, tree: String) {
     runCatching {
         context.contentResolver.releasePersistableUriPermission(
             Uri.parse(tree),
-            FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
+            FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION,
         )
     }
 }
@@ -343,8 +361,8 @@ private fun releaseFolder(context: Context, tree: String) {
 /** Where the folder picker opens for [root]: the nearest folder of it that exists. */
 private fun initialFolder(root: String): Uri? {
     val primary = Environment.getExternalStorageDirectory().absolutePath
-    val existing = generateSequence(File(root)) { it.parentFile }
-        .firstOrNull { it.isDirectory } ?: return null
+    val existing =
+        generateSequence(File(root)) { it.parentFile }.firstOrNull { it.isDirectory } ?: return null
     val id = FolderPath.toDocumentId(existing.path, primary) ?: return null
     return DocumentsContract.buildDocumentUri(FolderPath.EXTERNAL_STORAGE, id)
 }
@@ -355,14 +373,16 @@ private fun ToolsSection(container: AppContainer) {
     var refresh by remember { mutableIntStateOf(0) }
     var updating by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<ToolsResult?>(null) }
-    val versions by produceState<Map<String, String>?>(null, refresh) {
-        value =
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    container.python.versions()
-                }.getOrElse { mapOf("error" to (it.message ?: "")) }
-            }
-    }
+    val versions by
+        produceState<Map<String, String>?>(null, refresh) {
+            value =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        container.python.versions()
+                    }
+                        .getOrElse { mapOf("error" to (it.message ?: "")) }
+                }
+        }
     // Read here: the buttons below set them from outside composition.
     val resetDone = stringResource(R.string.tools_reset_done)
     val updated = stringResource(R.string.tools_updated)
@@ -370,18 +390,19 @@ private fun ToolsSection(container: AppContainer) {
     val restartLater = stringResource(R.string.tools_restart_after_downloads)
 
     // Restarting would cut a running download short, and nothing resumes the queue on launch.
-    fun applied(text: String) = if (container.downloads.hasPending) {
-        ToolsResult(text + "\n\n" + restartLater, restart = false)
-    } else {
-        ToolsResult(text, restart = true)
-    }
+    fun applied(text: String) =
+        if (container.downloads.hasPending) {
+            ToolsResult(text + "\n\n" + restartLater, restart = false)
+        } else {
+            ToolsResult(text, restart = true)
+        }
     Section(stringResource(R.string.settings_tools), Icons.Outlined.Build) {
         val current = versions
         if (current == null) {
             ListItem(
                 headlineContent = { Text(stringResource(R.string.tools_starting_python)) },
                 leadingContent = { CircularProgressIndicator(Modifier.size(24.dp)) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             )
         } else {
             current.forEach { (name, version) ->
@@ -391,7 +412,7 @@ private fun ToolsSection(container: AppContainer) {
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (updating) CircularProgressIndicator(Modifier.size(24.dp))
             OutlinedButton(
@@ -399,8 +420,10 @@ private fun ToolsSection(container: AppContainer) {
                 onClick = {
                     container.python.resetTools()
                     result = applied(resetDone)
-                }
-            ) { Text(stringResource(R.string.tools_reset)) }
+                },
+            ) {
+                Text(stringResource(R.string.tools_reset))
+            }
             FilledTonalButton(
                 enabled = !updating,
                 onClick = {
@@ -408,18 +431,21 @@ private fun ToolsSection(container: AppContainer) {
                     scope.launch {
                         val outcome = withContext(Dispatchers.IO) { container.python.updateTools() }
                         updating = false
-                        result = if (outcome.status == "ok") {
-                            applied(updated + "\n\n" + outcome.message.takeLast(600))
-                        } else {
-                            ToolsResult(
-                                updateFailed + "\n\n" + outcome.message.takeLast(1200),
-                                restart = false
-                            )
-                        }
+                        result =
+                            if (outcome.status == "ok") {
+                                applied(updated + "\n\n" + outcome.message.takeLast(600))
+                            } else {
+                                ToolsResult(
+                                    updateFailed + "\n\n" + outcome.message.takeLast(1200),
+                                    restart = false,
+                                )
+                            }
                         refresh++
                     }
-                }
-            ) { Text(stringResource(R.string.tools_update)) }
+                },
+            ) {
+                Text(stringResource(R.string.tools_update))
+            }
         }
     }
     result?.let { shown ->
@@ -435,24 +461,24 @@ private fun ToolsSection(container: AppContainer) {
                     TextButton(onClick = { result = null }) { Text(stringResource(R.string.ok)) }
                 }
             },
-            dismissButton = if (shown.restart) {
-                {
-                    TextButton(onClick = { result = null }) {
-                        Text(stringResource(R.string.tools_later))
+            dismissButton =
+                if (shown.restart) {
+                    {
+                        TextButton(onClick = { result = null }) {
+                            Text(stringResource(R.string.tools_later))
+                        }
                     }
-                }
-            } else {
-                null
-            },
+                } else {
+                    null
+                },
             title = { Text(stringResource(R.string.tools_update_title)) },
             text = {
                 Text(
                     shown.text,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.Monospace
-                    )
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 )
-            }
+            },
         )
     }
 }
@@ -472,25 +498,26 @@ private fun Section(title: String, icon: ImageVector, content: @Composable () ->
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier.padding(start = 8.dp),
         ) {
             Icon(
                 icon,
                 null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Text(
                 title,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-            )
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                )
         ) {
             Column { content() }
         }
@@ -513,28 +540,28 @@ private fun AboutSection(onOpenAndroidLicenses: () -> Unit, onOpenPythonLicenses
         SettingItem(
             title = stringResource(R.string.about_repository),
             summary = REPOSITORY.removePrefix("https://"),
-            onClick = { uriHandler.openUri(REPOSITORY) }
+            onClick = { uriHandler.openUri(REPOSITORY) },
         )
         SettingItem(
             title = stringResource(R.string.about_license),
             summary = "MIT License",
-            onClick = { uriHandler.openUri(LICENSE) }
+            onClick = { uriHandler.openUri(LICENSE) },
         )
         SettingItem(title = stringResource(R.string.about_version), summary = version)
         SettingItem(
             title = stringResource(R.string.about_donate),
             summary = stringResource(R.string.about_donate_summary),
-            onClick = { uriHandler.openUri(SPONSORS) }
+            onClick = { uriHandler.openUri(SPONSORS) },
         )
         SettingItem(
             title = stringResource(R.string.about_licenses),
             summary = stringResource(R.string.about_licenses_android),
-            onClick = onOpenAndroidLicenses
+            onClick = onOpenAndroidLicenses,
         )
         SettingItem(
             title = stringResource(R.string.about_licenses),
             summary = stringResource(R.string.about_licenses_python),
-            onClick = onOpenPythonLicenses
+            onClick = onOpenPythonLicenses,
         )
     }
 }
@@ -544,14 +571,14 @@ private fun SettingItem(
     title: String,
     summary: String,
     trailing: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
 ) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(summary) },
         trailingContent = trailing,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = if (onClick != null) Modifier.clickableRow(onClick) else Modifier
+        modifier = if (onClick != null) Modifier.clickableRow(onClick) else Modifier,
     )
 }
 
@@ -560,14 +587,14 @@ private fun SwitchItem(
     title: String,
     summary: String,
     checked: Boolean,
-    onChange: (Boolean) -> Unit
+    onChange: (Boolean) -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(summary) },
         trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickableRow { onChange(!checked) }
+        modifier = Modifier.clickableRow { onChange(!checked) },
     )
 }
 
@@ -576,14 +603,13 @@ private fun ChoiceItem(
     title: String,
     options: List<Pair<String, String>>,
     selected: String,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
     SettingItem(
         title = title,
-        summary =
-            options.firstOrNull { it.first == selected }?.second ?: selected,
-        onClick = { open = true }
+        summary = options.firstOrNull { it.first == selected }?.second ?: selected,
+        onClick = { open = true },
     )
     if (open) {
         AlertDialog(
@@ -592,13 +618,9 @@ private fun ChoiceItem(
             text = {
                 Column {
                     options.forEachIndexed { index, (value, label) ->
-                        if (index >
-                            0
-                        ) {
+                        if (index > 0) {
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(
-                                    alpha = 0.4f
-                                )
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                             )
                         }
                         ListItem(
@@ -607,17 +629,18 @@ private fun ChoiceItem(
                                 RadioButton(selected = value == selected, onClick = null)
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.clickableRow {
-                                onSelect(value)
-                                open = false
-                            }
+                            modifier =
+                                Modifier.clickableRow {
+                                    onSelect(value)
+                                    open = false
+                                },
                         )
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { open = false }) { Text(stringResource(R.string.close)) }
-            }
+            },
         )
     }
 }
