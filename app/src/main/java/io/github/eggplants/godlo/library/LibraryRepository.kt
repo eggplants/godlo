@@ -29,6 +29,8 @@ data class Album(
     val cover: File,
     val count: Int,
     val modified: Long,
+    /** The episode's number from getjmanga's `metadata.json`, which orders the episodes. */
+    val number: Int? = null,
 ) {
     val title: String
         get() = dir.name
@@ -124,6 +126,7 @@ class LibraryRepository(settings: SettingsRepository) {
                         cover = images.minWith(NaturalOrder.files),
                         count = images.size,
                         modified = images.maxOf { it.lastModified() },
+                        number = episodeNumber(dir),
                     )
             }
         return albums

@@ -55,7 +55,8 @@ fun ConfigFile.refusal(path: List<PathStep>): Refusal? {
                 else -> null
             }
 
-        // getjmanga is run with -d, -F, --cbz / --no-cbz and one of --bulk, --no-bulk, --both.
+        // getjmanga is run with -d, -F, --cbz / --no-cbz, --metadata and one of --bulk, --no-bulk,
+        // --both.
         ConfigFile.GETJMANGA ->
             when {
                 names.size != 1 -> null
@@ -101,4 +102,4 @@ fun settingName(path: List<PathStep>): String =
         .replace(".[", "[")
 
 private val GALLERY_DL_LOCATION = setOf("base-directory", "directory")
-private val GETJMANGA_OVERRIDDEN = setOf("format", "bulk", "both", "cbz")
+private val GETJMANGA_OVERRIDDEN = setOf("format", "bulk", "both", "cbz", "metadata")

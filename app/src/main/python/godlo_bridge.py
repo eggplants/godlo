@@ -724,6 +724,8 @@ def _getjmanga_runner(request: dict, callback: object, *, patrol: bool = False):
     args = ["-d", str(root), "-F", request.get("image_format") or "jpg"]
     # Always one or the other: the app's setting, not getjmanga.toml's, decides.
     args.append("--cbz" if request.get("cbz") else "--no-cbz")
+    # Always on: metadata.json's number is what the library orders the episodes by.
+    args.append("--metadata")
     if patrol:
         parsed = cli.parse_args(args, patrol=True)
     else:

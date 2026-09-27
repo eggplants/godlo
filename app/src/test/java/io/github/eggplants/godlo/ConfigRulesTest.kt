@@ -47,11 +47,10 @@ class ConfigRulesTest {
     fun getjmanga() {
         val file = ConfigFile.GETJMANGA
         assertEquals(Refusal.LOCATION, file.refusal(keys("savedir")))
-        for (key in listOf("format", "bulk", "both", "cbz")) {
+        for (key in listOf("format", "bulk", "both", "cbz", "metadata")) {
             assertEquals(key, Refusal.OVERRIDDEN, file.refusal(keys(key)))
         }
         assertNull(file.refusal(keys("overwrite")))
-        assertNull(file.refusal(keys("metadata")))
         // Only at the top: a site may well have a key called format.
         assertNull(file.refusal(keys("site", "x.com", "format")))
     }

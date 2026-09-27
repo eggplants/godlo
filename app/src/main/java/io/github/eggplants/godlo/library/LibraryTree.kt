@@ -94,13 +94,13 @@ class LibraryTree<T>(
         }
 
     companion object {
-        /** Albums: episodes in reading order, so 2話 comes before 10話. */
+        /** Albums: episodes in reading order, by getjmanga's numbers or else by name. */
         val albums =
             LibraryTree<Album>(
                 pathOf = { it.path },
                 fileOf = { it.dir },
                 modifiedOf = { it.modified },
-                itemOrder = { level -> level.sortedWith(compareBy(NaturalOrder) { it.title }) },
+                itemOrder = { level -> inReadingOrder(level, { it.title }, { it.number }) },
             )
 
         /**

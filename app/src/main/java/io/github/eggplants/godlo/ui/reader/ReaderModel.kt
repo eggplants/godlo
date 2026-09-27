@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import androidx.core.content.edit
 import io.github.eggplants.godlo.library.IMAGE_EXTENSIONS
 import io.github.eggplants.godlo.library.NaturalOrder
+import io.github.eggplants.godlo.library.episodeNumber
+import io.github.eggplants.godlo.library.inReadingOrder
 import java.io.File
 
 data class Page(val file: File, val width: Int, val height: Int) {
@@ -39,7 +41,9 @@ object ReaderModel {
                         } == true
                 }
                 .orEmpty()
-                .sortedWith(NaturalOrder.files)
+                .map { it to episodeNumber(it) }
+                .let { found -> inReadingOrder(found, { it.first.name }, { it.second }) }
+                .map { it.first }
         val index = siblings.indexOfFirst { it.absolutePath == dir.absolutePath }
         return Chapter(
             pages = pages,

@@ -85,6 +85,9 @@ bare jar, so it runs through `java -jar` (`vars.ktfmt` in `mise.toml`).
 - **`library/`** -- `LibraryRepository` walks the tools' directories; what a file is comes from
   its extension, and a directory with pictures is an album. `LibraryTree` groups items by
   `<site>/<title>/...` for every tab, with `NaturalOrder` for page and episode numbers.
+  getjmanga always runs with `--metadata`; `EpisodeOrder.kt` orders episodes (the image tab and
+  the reader's previous / next) by the `number` in each `metadata.json` when every episode of a
+  title has one, and by name otherwise.
 - **`player/`** -- Media3 `PlaybackService` and `AudioPlayer`.
 - **`ui/`** -- Compose screens by feature (`download`, `library`, `reader`, `player`,
   `settings`); `GodloRoot.kt` holds navigation and the top-level tabs.
