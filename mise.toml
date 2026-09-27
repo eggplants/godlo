@@ -11,7 +11,7 @@ usage = "latest"
 
 [vars]
 # Settings come from .editorconfig. Pass --dry-run --set-exit-if-changed to check.
-ktfmt = """git ls-files -z '*.kt' '*.kts' | xargs -0 \
+ktfmt = """git ls-files -z --cached --others --exclude-standard '*.kt' '*.kts' | xargs -0 \
 java -jar "$(mise where aqua:Kotlin/ktfmt)/ktfmt" --kotlinlang-style --enable-editorconfig --quiet"""
 
 [tasks."build:native"]
