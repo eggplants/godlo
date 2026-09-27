@@ -4,8 +4,15 @@ claude = "latest"
 java = "temurin-21"
 python = "3.13"
 ktlint = "latest"
+# A bare jar: run it with `java -jar`, as {{vars.ktfmt}} does.
+"aqua:Kotlin/ktfmt" = "latest"
 pinact = "latest"
 usage = "latest"
+
+[vars]
+# Settings come from .editorconfig. Pass --dry-run --set-exit-if-changed to check.
+ktfmt = """git ls-files -z '*.kt' '*.kts' | xargs -0 \
+java -jar "$(mise where aqua:Kotlin/ktfmt)/ktfmt" --kotlinlang-style --enable-editorconfig --quiet"""
 
 [tasks."build:native"]
 description = "Build the libwebp stubs and the Pillow libraries (needs NDK r28c)"
@@ -31,13 +38,22 @@ description = "Run JVM unit tests"
 run = "./gradlew test"
 
 [tasks.format]
-description = "Format Kotlin sources with ktlint"
+description = "Format Kotlin sources with ktlint, then ktfmt"
 alias = "fmt"
-run = "ktlint --format --relative --log-level=warn"
+# ktfmt runs last, so the layout is always its own.
+run = ["ktlint --format --relative --log-level=warn", "{{vars.ktfmt}}"]
 
-[tasks."lint:kt"]
+[tasks."lint:ktlint"]
 description = "Lint Kotlin sources with ktlint"
 run = "ktlint --relative --log-level=warn"
+
+[tasks."lint:ktfmt"]
+description = "Check that Kotlin sources are formatted with ktfmt"
+run = "{{vars.ktfmt}} --dry-run --set-exit-if-changed"
+
+[tasks."lint:kt"]
+description = "Lint Kotlin sources with ktlint and ktfmt"
+depends = ["lint:ktlint", "lint:ktfmt"]
 
 [tasks."lint:android"]
 description = "Run Android Lint"

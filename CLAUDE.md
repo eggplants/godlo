@@ -25,9 +25,9 @@ mise run build                         # ./gradlew assembleDebug
 mise run build:release                 # signed release APK from .env and release.jks (.env.example)
 mise run test                          # ./gradlew test (JVM unit tests)
 ./gradlew testDebugUnitTest --tests 'io.github.eggplants.godlo.SharedTextTest'  # a single test class
-mise run format                        # ktlint --format
-mise run lint                          # ktlint + Android Lint
-mise run ci                            # ktlint, then ./gradlew lint test assembleDebug -- what CI runs
+mise run format                        # ktlint --format, then ktfmt
+mise run lint                          # ktlint + ktfmt check + Android Lint
+mise run ci                            # ktlint + ktfmt check, then ./gradlew lint test assembleDebug -- what CI runs
 ```
 
 The build needs a `python3.13` on the host, because Chaquopy pip-installs the packages at build
@@ -36,8 +36,11 @@ when it is not on `PATH` (Android Studio started from a desktop entry does not s
 `PATH`); `-Pgodlo.buildPython=/path/to/python3.13` overrides it. The configuration cache is off
 on purpose: the Chaquopy plugin runs Python at configuration time.
 
-Kotlin style comes from `.editorconfig`: `ktlint_code_style = android_studio` with
-`max_line_length = 100`, so ktlint and Android Lint agree.
+Kotlin style comes from `.editorconfig`. ktfmt (`--kotlinlang-style --enable-editorconfig`,
+`max_line_length = 100`, trailing commas on multi-line lists) owns the layout and runs last in
+`mise run format`. ktlint checks the rest with `ktlint_code_style = android_studio`, so it agrees
+with Android Lint; its layout rules that fight ktfmt are disabled there. mise installs ktfmt as a
+bare jar, so it runs through `java -jar` (`vars.ktfmt` in `mise.toml`).
 
 ## Architecture
 

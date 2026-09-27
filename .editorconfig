@@ -13,9 +13,23 @@ indent_size = 4
 indent_size = 2
 
 [*.{kt,kts}]
-# Android Kotlin style guide: the same rules Android Studio's formatter and
-# Android Lint assume, so ktlint never asks for code that Lint rejects.
-ktlint_code_style = android_studio
+# ktfmt (--kotlinlang-style --enable-editorconfig) owns the layout: it reads
+# max_line_length, indent_size, ij_continuation_indent_size and the trailing
+# comma strategy below.
 max_line_length = 100
+ij_continuation_indent_size = 4
+ktfmt_trailing_comma_management_strategy = complete
+# ktlint checks everything else with the Android Kotlin style guide, so it
+# never asks for code that Android Lint rejects. Its layout rules are off:
+# they disagree with ktfmt on trailing commas, indents and where signatures
+# and expressions wrap.
+ktlint_code_style = android_studio
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_indent = disabled
+ktlint_standard_wrapping = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
 # Composables are named like types.
 ktlint_function_naming_ignore_when_annotated_with = Composable
