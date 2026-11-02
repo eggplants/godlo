@@ -103,7 +103,7 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
                                 .filter {
                                     it.isNotBlank()
                                 }
-                                .joinToString(" ")
+                                .joinToString(" "),
                         )
                     },
                     supportingContent = { Text(entry.license) },
@@ -118,7 +118,9 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
         val uriHandler = LocalUriHandler.current
         ModalBottomSheet(onDismissRequest = { shown = null }) {
             Column(
-                Modifier.navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp)
+                Modifier.navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 24.dp),
             ) {
                 Text(entry.name, style = MaterialTheme.typography.titleLarge)
                 Text(
@@ -140,7 +142,7 @@ fun PythonLicensesScreen(onBack: () -> Unit) {
                         entry.text,
                         style =
                             MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
                             ),
                         modifier =
                             Modifier.fillMaxWidth()

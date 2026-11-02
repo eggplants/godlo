@@ -189,8 +189,8 @@ fun ReaderScreen(
                         // Clear of the status bar, and of a camera hole on the side in landscape.
                         .windowInsetsPadding(
                             WindowInsets.safeDrawing.only(
-                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                            )
+                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                            ),
                         )
                         .padding(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -216,7 +216,7 @@ fun ReaderScreen(
                     IconButton(
                         onClick = {
                             showOptions = true
-                        }
+                        },
                     ) {
                         Icon(Icons.Outlined.AutoStories, stringResource(R.string.reader_options))
                     }
@@ -304,7 +304,7 @@ private fun PagedReader(
                         (pager.currentPage + step).coerceIn(
                             0,
                             pager.pageCount - 1,
-                        )
+                        ),
                     )
                 }
             }
@@ -329,7 +329,7 @@ private fun PagedReader(
             } else if (indices.size == 1) {
                 val zoom =
                     rememberZoomableImageState(
-                        rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = 5f))
+                        rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = 5f)),
                     )
                 ZoomableAsyncImage(
                     model = chapter.pages[indices[0]].file,
@@ -431,7 +431,7 @@ private fun VerticalReader(
 ) {
     val list =
         rememberLazyListState(
-            initialFirstVisibleItemIndex = page.coerceIn(0, chapter.pages.lastIndex)
+            initialFirstVisibleItemIndex = page.coerceIn(0, chapter.pages.lastIndex),
         )
     LaunchedEffect(list) { snapshotFlow { list.firstVisibleItemIndex }.collect(onPage) }
     LaunchedEffect(page) {
@@ -482,7 +482,7 @@ private fun ReaderBottomBar(
                 .padding(
                     horizontal = 12.dp,
                     vertical = 8.dp,
-                )
+                ),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val previous = if (rtl) chapter.next else chapter.previous
@@ -491,14 +491,14 @@ private fun ReaderBottomBar(
                     Icon(
                         Icons.Filled.SkipPrevious,
                         stringResource(
-                            if (rtl) R.string.next_episode else R.string.previous_episode
+                            if (rtl) R.string.next_episode else R.string.previous_episode,
                         ),
                     )
                 }
                 // The slider runs the way the pages turn.
                 CompositionLocalProvider(
                     LocalLayoutDirection provides
-                        if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+                        if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
                 ) {
                     Slider(
                         value = position,
@@ -520,7 +520,7 @@ private fun ReaderBottomBar(
                     Icon(
                         Icons.Filled.SkipNext,
                         stringResource(
-                            if (rtl) R.string.previous_episode else R.string.next_episode
+                            if (rtl) R.string.previous_episode else R.string.next_episode,
                         ),
                     )
                 }

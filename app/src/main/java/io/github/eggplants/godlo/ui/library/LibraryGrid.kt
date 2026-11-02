@@ -37,7 +37,7 @@ fun LibraryGrid(
                     LibraryLayout.LIST -> 360.dp
                     LibraryLayout.LARGE_GRID -> largeMinSize
                     LibraryLayout.SMALL_GRID -> smallMinSize
-                }
+                },
             ),
         contentPadding = PaddingValues(start = gutter, end = gutter, bottom = 16.dp),
         horizontalArrangement =
@@ -46,7 +46,7 @@ fun LibraryGrid(
                     6.dp
                 } else {
                     12.dp
-                }
+                },
             ),
         verticalArrangement =
             Arrangement.spacedBy(
@@ -54,7 +54,7 @@ fun LibraryGrid(
                     LibraryLayout.LIST -> 0.dp
                     LibraryLayout.LARGE_GRID -> 16.dp
                     LibraryLayout.SMALL_GRID -> 8.dp
-                }
+                },
             ),
         modifier = Modifier.fillMaxSize(),
         content = content,

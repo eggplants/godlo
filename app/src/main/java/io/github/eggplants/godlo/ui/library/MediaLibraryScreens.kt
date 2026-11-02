@@ -120,7 +120,7 @@ fun AudioLibraryScreen(container: AppContainer, initialPath: String = "") {
                     IconButton(
                         onClick = {
                             container.audio.play(below.map { it.file }.shuffled(), 0)
-                        }
+                        },
                     ) {
                         Icon(Icons.Filled.Shuffle, stringResource(R.string.shuffle_play))
                     }
@@ -437,7 +437,7 @@ private fun VideoThumbnail(
     Card(
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
         modifier = modifier.aspectRatio(16f / 9f),
     ) {

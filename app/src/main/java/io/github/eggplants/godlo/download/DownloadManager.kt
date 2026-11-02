@@ -136,7 +136,7 @@ class DownloadManager(
                 audioFormat = "",
                 title = AppLanguage.localize(context).getString(R.string.patrol_title),
                 patrol = true,
-            )
+            ),
         )
     }
 

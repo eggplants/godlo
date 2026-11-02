@@ -211,12 +211,12 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
                     // Off, this video over and over, or the whole folder over and over.
                     setRepeatToggleModes(
                         RepeatModeUtil.REPEAT_TOGGLE_MODE_ONE or
-                            RepeatModeUtil.REPEAT_TOGGLE_MODE_ALL
+                            RepeatModeUtil.REPEAT_TOGGLE_MODE_ALL,
                     )
                     setControllerVisibilityListener(
                         PlayerView.ControllerVisibilityListener { visibility ->
                             controlsVisible = visibility == android.view.View.VISIBLE
-                        }
+                        },
                     )
                 }
             },
@@ -238,8 +238,8 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
                     Modifier.fillMaxWidth()
                         .windowInsetsPadding(
                             WindowInsets.safeDrawing.only(
-                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-                            )
+                                WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                            ),
                         )
                         .padding(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -268,7 +268,7 @@ fun VideoPlayerScreen(container: AppContainer, path: String, onBack: () -> Unit)
                                 activity.pictureInPicture =
                                     pictureInPictureParams(aspect, videoBounds)
                                 activity.enterPictureInPicture()
-                            }
+                            },
                         ) {
                             Icon(
                                 Icons.Filled.PictureInPictureAlt,

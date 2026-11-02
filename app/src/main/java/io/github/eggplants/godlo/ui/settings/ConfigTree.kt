@@ -107,7 +107,7 @@ fun JsonElement.update(path: List<PathStep>, transform: (JsonElement) -> JsonEle
                     } else {
                         value
                     }
-                }
+                },
             )
         }
 
@@ -121,7 +121,7 @@ fun JsonElement.update(path: List<PathStep>, transform: (JsonElement) -> JsonEle
                     } else {
                         value
                     }
-                }
+                },
             )
         }
     }
@@ -138,7 +138,7 @@ fun JsonElement.remove(path: List<PathStep>): JsonElement {
                 JsonArray(
                     (parent as JsonArray).filterIndexed { i, _ ->
                         i != step.index
-                    }
+                    },
                 )
         }
     }
@@ -182,7 +182,7 @@ fun JsonElement.rename(path: List<PathStep>, name: String): JsonElement {
                 } else {
                     key
                 }) to value
-            }
+            },
         )
     }
 }

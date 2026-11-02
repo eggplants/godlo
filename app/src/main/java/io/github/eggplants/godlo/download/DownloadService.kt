@@ -97,7 +97,7 @@ class DownloadService : LifecycleService() {
                 .setContentTitle(
                     task?.title?.ifBlank {
                         null
-                    } ?: task?.url ?: strings.getString(R.string.downloading)
+                    } ?: task?.url ?: strings.getString(R.string.downloading),
                 )
                 .setContentText(task?.detail)
                 .setOngoing(true)
@@ -120,7 +120,7 @@ class DownloadService : LifecycleService() {
                     android.R.drawable.stat_sys_download_done
                 } else {
                     android.R.drawable.stat_notify_error
-                }
+                },
             )
             .setContentTitle(
                 strings.getString(
@@ -128,8 +128,8 @@ class DownloadService : LifecycleService() {
                         R.string.download_done
                     } else {
                         R.string.download_failed
-                    }
-                )
+                    },
+                ),
             )
             .setContentText(task.title.ifBlank { task.url })
             .setStyle(
@@ -139,8 +139,8 @@ class DownloadService : LifecycleService() {
                             .filter {
                                 it.isNotBlank()
                             }
-                            .joinToString("\n")
-                    )
+                            .joinToString("\n"),
+                    ),
             )
             .setAutoCancel(true)
             .setContentIntent(openApp())
@@ -160,14 +160,14 @@ class DownloadService : LifecycleService() {
                     CHANNEL_PROGRESS,
                     context.getString(R.string.channel_progress),
                     NotificationManager.IMPORTANCE_LOW,
-                )
+                ),
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_RESULT,
                     context.getString(R.string.channel_result),
                     NotificationManager.IMPORTANCE_DEFAULT,
-                )
+                ),
             )
         }
     }

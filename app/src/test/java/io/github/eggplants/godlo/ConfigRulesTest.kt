@@ -29,8 +29,12 @@ class ConfigRulesTest {
         assertNull(file.refusal(keys("extractor", "pixiv", "filename")))
         assertNull(
             file.refusal(
-                listOf(PathStep.Key("postprocessors"), PathStep.Index(0), PathStep.Key("directory"))
-            )
+                listOf(
+                    PathStep.Key("postprocessors"),
+                    PathStep.Index(0),
+                    PathStep.Key("directory"),
+                ),
+            ),
         )
     }
 
@@ -70,7 +74,7 @@ class ConfigRulesTest {
                  "extractor": {"base-directory": "/x", "pixiv": {"directory": ["a"], "ugoira": true}},
                  "output": {"mode": "terminal", "log": "x"}}
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
         assertEquals(
             listOf(

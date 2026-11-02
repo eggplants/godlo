@@ -187,7 +187,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                             } else {
                                 storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -244,7 +244,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                     onClick = {
                         vm.clearFinished()
                         confirmingClear = false
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
@@ -253,7 +253,7 @@ fun DownloadScreen(container: AppContainer, onOpen: (DownloadTarget) -> Unit) {
                 TextButton(
                     onClick = {
                         confirmingClear = false
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.cancel))
                 }
@@ -310,7 +310,7 @@ private fun DownloadFormCard(
     Card(
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             ),
         modifier = Modifier.fillMaxWidth().animateContentSize(),
     ) {
@@ -340,7 +340,7 @@ private fun DownloadFormCard(
                                             ?.toString()
                                     if (text != null) vm.setUrl(text.trim())
                                 }
-                            }
+                            },
                         ) {
                             Icon(
                                 Icons.Filled.ContentPaste,
@@ -351,7 +351,7 @@ private fun DownloadFormCard(
                         IconButton(
                             onClick = {
                                 vm.setUrl("")
-                            }
+                            },
                         ) {
                             Icon(
                                 Icons.Filled.Close,
@@ -479,7 +479,7 @@ private fun DownloadFormCard(
                     },
                     colors =
                         androidx.compose.material3.ListItemDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
                         ),
                     modifier = Modifier.padding(horizontal = 0.dp),
                 )
@@ -495,7 +495,7 @@ private fun DownloadFormCard(
                     },
                     colors =
                         androidx.compose.material3.ListItemDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
                         ),
                 )
             }
@@ -560,7 +560,7 @@ private fun TaskCard(
                     end = 8.dp,
                     bottom = 12.dp,
                 )
-                .animateContentSize()
+                .animateContentSize(),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -688,7 +688,7 @@ private fun TaskCard(
                             task.log.takeLast(30).joinToString("\n"),
                             style =
                                 MaterialTheme.typography.bodySmall.copy(
-                                    fontFamily = FontFamily.Monospace
+                                    fontFamily = FontFamily.Monospace,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier =

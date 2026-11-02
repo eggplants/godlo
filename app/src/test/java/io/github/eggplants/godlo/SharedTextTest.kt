@@ -24,7 +24,7 @@ class SharedTextTest {
         assertEquals(
             "https://example.com/#:~:text=This%20domain",
             SharedText.url(
-                "\"This domain is for use\"\nhttps://example.com/#:~:text=This%20domain"
+                "\"This domain is for use\"\nhttps://example.com/#:~:text=This%20domain",
             ),
         )
     }

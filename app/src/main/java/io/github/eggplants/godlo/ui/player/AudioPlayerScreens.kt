@@ -278,7 +278,7 @@ fun NowPlayingScreen(container: AppContainer, onBack: () -> Unit) {
                             Icon(
                                 if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 stringResource(
-                                    if (state.isPlaying) R.string.pause else R.string.play
+                                    if (state.isPlaying) R.string.pause else R.string.play,
                                 ),
                                 Modifier.size(40.dp),
                             )

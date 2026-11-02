@@ -106,13 +106,13 @@ class DownloadTargetTest {
     @Test
     fun nothingToOpenWhenDeletedOrUnfinished() {
         assertNull(
-            DownloadTarget.of(task(MediaKind.VIDEO, "/d/yt-dlp/youtube.com/gone.mp4"), library)
+            DownloadTarget.of(task(MediaKind.VIDEO, "/d/yt-dlp/youtube.com/gone.mp4"), library),
         )
         assertNull(
             DownloadTarget.of(
                 task(MediaKind.VIDEO, "/d/yt-dlp/youtube.com/v.mp4", state = TaskState.FAILED),
                 library,
-            )
+            ),
         )
     }
 

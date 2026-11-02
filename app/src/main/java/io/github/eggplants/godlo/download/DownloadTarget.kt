@@ -71,8 +71,8 @@ sealed interface DownloadTarget {
                                 commonPrefix(
                                     albums.map {
                                         it.path.dropLast(1)
-                                    }
-                                )
+                                    },
+                                ),
                             )
 
                         // gallery-dl also saves the videos of image sites.

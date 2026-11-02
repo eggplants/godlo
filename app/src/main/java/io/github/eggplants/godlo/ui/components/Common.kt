@@ -53,7 +53,7 @@ fun ConfirmDeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Un
                 onClick = {
                     onConfirm()
                     onDismiss()
-                }
+                },
             ) {
                 Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
             }

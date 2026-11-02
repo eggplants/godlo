@@ -275,8 +275,8 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                                             R.string.config_visual
                                         } else {
                                             R.string.config_text
-                                        }
-                                    )
+                                        },
+                                    ),
                                 )
                             },
                         )
@@ -326,7 +326,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                         problem,
                         style =
                             MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
                             ),
                     )
                     Text(stringResource(R.string.config_invalid_body))
@@ -355,7 +355,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                                 setting,
                                 style =
                                     MaterialTheme.typography.bodyMedium.copy(
-                                        fontFamily = FontFamily.Monospace
+                                        fontFamily = FontFamily.Monospace,
                                     ),
                             )
                             Text(
@@ -388,7 +388,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                         onClick = {
                             vm.dismissProblem()
                             vm.load()
-                        }
+                        },
                     ) {
                         Text(stringResource(R.string.config_reload))
                     }
@@ -412,7 +412,7 @@ fun ConfigEditorScreen(container: AppContainer, config: ConfigFile, onBack: () -
                     onClick = {
                         confirmDiscard = false
                         onBack()
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.config_discard))
                 }
@@ -781,7 +781,7 @@ private fun ValueDialog(
                                 },
                             textStyle =
                                 MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = FontFamily.Monospace
+                                    fontFamily = FontFamily.Monospace,
                                 ),
                             modifier = Modifier.fillMaxWidth(),
                         )

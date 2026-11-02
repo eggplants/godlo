@@ -21,7 +21,7 @@ import org.junit.Test
 class ConfigTreeTest {
     private val tree =
         parseConfigJson(
-            """{"extractor": {"pixiv": {"ugoira": true}, "skip": "abort:3"}, "list": [1, 2.5, null]}"""
+            """{"extractor": {"pixiv": {"ugoira": true}, "skip": "abort:3"}, "list": [1, 2.5, null]}""",
         )
     private val extractor = PathStep.Key("extractor")
     private val list = PathStep.Key("list")

@@ -131,7 +131,7 @@ fun ImageLibraryScreen(
                     onClick = {
                         searching = !searching
                         if (!searching) query = ""
-                    }
+                    },
                 ) {
                     Icon(Icons.Outlined.Search, stringResource(R.string.search))
                 }
@@ -284,7 +284,7 @@ private fun NodeCard(
         Card(
             colors =
                 CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
             modifier = Modifier.fillMaxWidth().aspectRatio(0.72f),
         ) {

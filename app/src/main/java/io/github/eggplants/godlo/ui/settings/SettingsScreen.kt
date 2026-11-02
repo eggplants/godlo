@@ -190,7 +190,7 @@ fun SettingsScreen(
                                                 )
                                             }
                                             copy?.let { releaseFolder(context, it) }
-                                        }
+                                        },
                                     ) {
                                         Icon(
                                             Icons.Outlined.Restore,
@@ -516,8 +516,8 @@ private fun Section(title: String, icon: ImageVector, content: @Composable () ->
         Card(
             colors =
                 CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                ),
         ) {
             Column { content() }
         }
@@ -620,7 +620,7 @@ private fun ChoiceItem(
                     options.forEachIndexed { index, (value, label) ->
                         if (index > 0) {
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                             )
                         }
                         ListItem(

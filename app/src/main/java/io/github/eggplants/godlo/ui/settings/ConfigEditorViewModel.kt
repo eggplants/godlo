@@ -184,7 +184,7 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                                     R.string.config_imported_removed,
                                     removed.joinToString(", ") { it.setting },
                                 )
-                            }
+                            },
                 )
             }
         }
@@ -273,7 +273,7 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                             EditorMessage(
                                 R.string.config_error,
                                 e.message ?: "",
-                            )
+                            ),
                     )
                 }
             }
@@ -395,7 +395,7 @@ class ConfigEditorViewModel(private val container: AppContainer, val config: Con
                             EditorMessage(
                                 R.string.config_error,
                                 e.message ?: "",
-                            )
+                            ),
                     )
                 }
             } finally {

@@ -19,7 +19,7 @@ val gitDescribe: String = runCatching {
     providers
         .exec {
             commandLine(
-                listOfNotNull("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", dirtyFlag)
+                listOfNotNull("git", "describe", "--tags", "--match", "v[0-9]*-[0-9]*", dirtyFlag),
             )
             isIgnoreExitValue = true
         }
@@ -220,10 +220,10 @@ val nativeBuilds =
             file("src/main/jniLibs/$abi/libwebp.so"),
             file("src/main/jniLibs/$abi/libwebpmux.so"),
             rootProject.file(
-                "native/wheels/chaquopy_libjpeg-1.5.3+16k-py3-none-android_24_$wheelAbi.whl"
+                "native/wheels/chaquopy_libjpeg-1.5.3+16k-py3-none-android_24_$wheelAbi.whl",
             ),
             rootProject.file(
-                "native/wheels/chaquopy_freetype-2.9.1+16k-py3-none-android_24_$wheelAbi.whl"
+                "native/wheels/chaquopy_freetype-2.9.1+16k-py3-none-android_24_$wheelAbi.whl",
             ),
         )
     }
@@ -234,7 +234,7 @@ val checkNativeBuilds =
             if (missing.isNotEmpty()) {
                 throw GradleException(
                     "Missing ${missing.joinToString { it.relativeTo(rootDir).path }}: " +
-                        "run `mise run build:native` (native/build.sh) first."
+                        "run `mise run build:native` (native/build.sh) first.",
                 )
             }
         }

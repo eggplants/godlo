@@ -115,7 +115,7 @@ class PythonBridge(private val context: Context) {
     fun download(request: DownloadRequest, callback: DownloadCallback): Outcome =
         try {
             json.decodeFromString(
-                module.callAttr("download", json.encodeToString(request), callback).toString()
+                module.callAttr("download", json.encodeToString(request), callback).toString(),
             )
         } catch (e: Exception) {
             Outcome("error", e.message ?: e.javaClass.simpleName)

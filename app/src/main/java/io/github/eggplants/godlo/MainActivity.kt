@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
             // Android 12 and later enter on their own, when the params say so.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 setPictureInPictureParams(
-                    value ?: PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()
+                    value ?: PictureInPictureParams.Builder().setAutoEnterEnabled(false).build(),
                 )
             }
         }

@@ -162,7 +162,7 @@ fun GodloRoot(container: AppContainer) {
                                 if (top == TopLevel.DOWNLOADS && active > 0) {
                                     Badge { Text("$active") }
                                 }
-                            }
+                            },
                         ) {
                             Icon(
                                 if (selected) top.selectedIcon else top.icon,
